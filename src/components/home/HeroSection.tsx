@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function HeroSection() {
   return (
     <section className="relative bg-gradient-to-r from-[#007FAF] to-[#00AEEF] py-24 overflow-hidden">
@@ -11,13 +13,19 @@ export default function HeroSection() {
           </p>
 
           <div className="flex gap-4">
-            <button className="bg-white text-[#007FAF] px-8 py-4 rounded-2xl hover:bg-[#E6F7FB] transition-all">
+            <Link
+              to="/catalog"
+              className="bg-white text-[#007FAF] px-8 py-4 rounded-2xl hover:bg-[#E6F7FB] transition-all"
+            >
               Смотреть каталог
-            </button>
+            </Link>
 
-            <button className="bg-white/20 text-white px-8 py-4 rounded-2xl border border-white hover:bg-white/30 transition-all">
+            <Link
+              to="/contact"
+              className="bg-white/20 text-white px-8 py-4 rounded-2xl border border-white hover:bg-white/30 transition-all"
+            >
               Связаться с нами
-            </button>
+            </Link>
           </div>
         </div>
       </div>
