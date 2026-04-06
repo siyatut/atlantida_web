@@ -2,7 +2,9 @@ import { NavLink } from "react-router-dom";
 
 export default function Header() {
   const linkClassName = ({ isActive }: { isActive: boolean }) =>
-    `hover:text-[#00AEEF] ${isActive ? "text-[#00AEEF]" : ""}`;
+    `hover:text-[#00AEEF] transition-colors ${
+      isActive ? "text-[#00AEEF]" : ""
+    }`;
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
