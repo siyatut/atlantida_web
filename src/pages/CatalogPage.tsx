@@ -20,6 +20,8 @@ function getCategoryDescription(description: string | null): string {
   return plainText !== "" ? plainText : "Исследуйте подборку товаров в этой категории.";
 }
 
+const CATEGORY_ICONS = ["✣", "📖", "♡", "◍", "◎"];
+
 function CatalogPage() {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,31 +77,48 @@ function CatalogPage() {
   }, []);
 
   return (
-    <main className="px-4 py-10">
-      {isLoading ? <p>Загрузка категорий...</p> : null}
+    <main className="px-6 py-12 md:px-8 md:py-16">
+      <div className="mx-auto max-w-[1240px]">
+        <h1 className="mb-3 text-3xl font-semibold leading-snug text-[#234579]">Каталог товаров</h1>
+        <p className="mb-10 text-base leading-snug text-[#6B778B]">
+          Выберите категорию для просмотра товаров
+        </p>
 
-      {error ? <p>{error}</p> : null}
+        {isLoading ? <p className="text-base text-[#6B778B]">Загрузка категорий...</p> : null}
 
-      {!isLoading && !error ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
+
+        {!isLoading && !error ? (
+          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {rootCategories.map((category) => {
             const childCount = childCountByParentId[category.id] ?? 0;
             const description = getCategoryDescription(category.description);
+            const icon = CATEGORY_ICONS[Number(category.id) % CATEGORY_ICONS.length];
 
             return (
               <Link to={`/catalog/category/${category.id}`} key={category.id}>
-                <article className="rounded border p-4 transition-colors hover:bg-[#F1FCFF]">
-                  <h2 className="mb-2 text-lg font-semibold">{category.name}</h2>
-                  <p className="mb-4 text-sm text-slate-700">{description}</p>
-                  <p className="text-sm font-medium text-slate-900">
-                    Подкатегорий: {childCount}
-                  </p>
+                <article className="flex h-[210px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-colors hover:bg-white">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#CBEAF6] text-2xl text-[#2F84BF]">
+                    {icon}
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="mb-2 text-xl font-semibold leading-snug text-[#394452]">
+                      {category.name}
+                    </h2>
+                    <p className="mb-5 line-clamp-2 text-sm leading-snug text-[#68758A]">
+                      {description}
+                    </p>
+                    <p className="text-sm font-medium text-[#4BADE8]">
+                      {childCount} подкатегорий →
+                    </p>
+                  </div>
                 </article>
               </Link>
             );
           })}
-        </div>
-      ) : null}
+          </div>
+        ) : null}
+      </div>
     </main>
   );
 }

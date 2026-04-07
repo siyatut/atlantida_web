@@ -113,52 +113,83 @@ function ProductDetailsPage() {
   const breadcrumbBackPath =
     routeState.backPath ??
     (fallbackCategory ? `/catalog/category/${fallbackCategory.id}` : "/catalog");
-  const breadcrumbBackLabel =
-    routeState.backLabel ?? (fallbackCategory ? fallbackCategory.name : "Каталог");
 
   return (
-    <main className="px-4 py-10">
-      <div className="mb-6">
-        <Link to={breadcrumbBackPath} className="text-sm text-slate-700 hover:text-slate-900">
-          ← {breadcrumbBackLabel}
-        </Link>
-      </div>
+    <main className="px-6 py-12 md:px-8 md:py-16">
+      <div className="mx-auto max-w-[1240px]">
+        <div className="mb-10">
+          <Link
+            to={breadcrumbBackPath}
+            className="inline-flex items-center gap-2 text-base font-medium text-[#4A9DD4] transition-colors hover:text-[#2F84BF]"
+          >
+            <span aria-hidden="true">‹</span>
+            Назад к списку товаров
+          </Link>
+        </div>
 
-      {isLoading ? <p>Загрузка товара...</p> : null}
-      {error ? <p>{error}</p> : null}
+        {isLoading ? <p className="text-base text-[#6B778B]">Загрузка товара...</p> : null}
+        {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
 
-      {!isLoading && !error && product ? (
-        <article className="rounded border p-4 sm:p-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              {product.image ? (
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  className="h-72 w-full rounded object-cover sm:h-96"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="flex h-72 items-center justify-center rounded border border-dashed text-sm text-slate-500 sm:h-96">
-                  Изображение недоступно
+        {!isLoading && !error && product ? (
+          <article>
+            <div className="grid items-start gap-10 lg:grid-cols-[minmax(320px,460px)_1fr]">
+              <div>
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.title}
+                    className="h-[420px] w-full rounded-[24px] border border-[#DCE4EB] bg-white object-cover md:h-[560px]"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="flex h-[420px] items-center justify-center rounded-[24px] border border-[#DCE4EB] bg-white text-sm text-slate-500 md:h-[560px]">
+                    Изображение недоступно
+                  </div>
+                )}
+              </div>
+
+              <div className="max-w-[620px]">
+                <h1 className="mb-4 text-3xl font-semibold leading-snug text-[#234579]">
+                  {product.title}
+                </h1>
+                <p className="mb-5 text-xl font-medium leading-snug text-[#4BADE8]">
+                  {formatCatalogProductPrice(product)}
+                </p>
+                {stockLabel ? (
+                  <p className="mb-7 inline-flex rounded-2xl bg-[#D8F0DD] px-4 py-2 text-sm font-medium text-[#3E8A57]">
+                    ✓ {stockLabel}
+                  </p>
+                ) : null}
+
+                {descriptionHtml ? (
+                  <div className="mb-7 rounded-3xl bg-[#E2F2FA] p-6 md:p-8">
+                    <h2 className="mb-3 text-xl font-medium leading-snug text-[#364250]">Описание</h2>
+                    <div
+                      className="prose prose-sm max-w-none text-sm leading-snug text-[#647387] md:text-base"
+                      dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                    />
+                  </div>
+                ) : null}
+
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    type="button"
+                    className="inline-flex min-w-[240px] items-center justify-center gap-2 rounded-2xl bg-[#ED4748] px-6 py-4 text-base font-medium text-white shadow-sm"
+                  >
+                    ♡ В избранном
+                  </button>
+                  <button
+                    type="button"
+                    className="inline-flex min-w-[240px] items-center justify-center gap-2 rounded-2xl bg-[#3E9AD4] px-6 py-4 text-base font-medium text-white shadow-sm"
+                  >
+                    ☐ Заказать
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
-
-            <div>
-              <h1 className="mb-3 text-2xl font-semibold">{product.title}</h1>
-              <p className="mb-4 text-xl font-medium">{formatCatalogProductPrice(product)}</p>
-              {stockLabel ? <p className="mb-4 text-sm text-slate-700">Статус: {stockLabel}</p> : null}
-              {descriptionHtml ? (
-                <div
-                  className="prose prose-sm max-w-none text-slate-700"
-                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                />
-              ) : null}
-            </div>
-          </div>
-        </article>
-      ) : null}
+          </article>
+        ) : null}
+      </div>
     </main>
   );
 }
