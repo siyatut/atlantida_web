@@ -104,7 +104,14 @@ function CategoryPage() {
       {!isLoading && !error && childCategories.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {childCategories.map((category) => (
-            <Link to={`/catalog/category/${category.id}/products`} key={category.id}>
+            <Link
+              to={`/catalog/category/${category.id}/products`}
+              key={category.id}
+              state={{
+                parentCategoryId: String(parsedCategoryId),
+                parentCategoryName: activeCategory?.name ?? "Категория",
+              }}
+            >
               <article className="rounded border p-4 transition-colors hover:bg-[#F1FCFF]">
                 <h2 className="mb-2 text-lg font-semibold">{category.name}</h2>
                 <p className="text-sm text-slate-700">

@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
 import { formatCatalogProductPrice } from "../utils/price";
+
+type CategoryProductsRouteState = {
+  parentCategoryId?: string;
+  parentCategoryName?: string;
+};
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -14,6 +19,8 @@ function getErrorMessage(error: unknown): string {
 
 function CategoryProductsPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
+  const location = useLocation();
+  const routeState = (location.state ?? {}) as CategoryProductsRouteState;
   const parsedCategoryId = Number(categoryId);
   const isValidCategoryId = Number.isFinite(parsedCategoryId) && parsedCategoryId > 0;
 
@@ -29,6 +36,31 @@ function CategoryProductsPage() {
 
     return categories.find((category) => category.id === String(parsedCategoryId)) ?? null;
   }, [categories, isValidCategoryId, parsedCategoryId]);
+
+  const parentCategoryId = useMemo(() => {
+    if (routeState.parentCategoryId && Number.isFinite(Number(routeState.parentCategoryId))) {
+      return routeState.parentCategoryId;
+    }
+
+    if (activeCategory && activeCategory.parent > 0) {
+      return String(activeCategory.parent);
+    }
+
+    return null;
+  }, [activeCategory, routeState.parentCategoryId]);
+
+  const parentCategoryName = useMemo(() => {
+    if (routeState.parentCategoryName && routeState.parentCategoryName.trim() !== "") {
+      return routeState.parentCategoryName;
+    }
+
+    if (!parentCategoryId) {
+      return "Каталог";
+    }
+
+    const parentCategory = categories.find((category) => category.id === parentCategoryId);
+    return parentCategory?.name ?? "Категория";
+  }, [categories, parentCategoryId, routeState.parentCategoryName]);
 
   useEffect(() => {
     if (!isValidCategoryId) {
@@ -83,8 +115,11 @@ function CategoryProductsPage() {
   return (
     <main className="px-4 py-10">
       <div className="mb-6">
-        <Link to={`/catalog/category/${categoryId}`} className="text-sm text-slate-700 hover:text-slate-900">
-          ← Подкатегории
+        <Link
+          to={parentCategoryId ? `/catalog/category/${parentCategoryId}` : "/catalog"}
+          className="text-sm text-slate-700 hover:text-slate-900"
+        >
+          ← {parentCategoryId ? parentCategoryName : "Каталог"}
         </Link>
       </div>
 
