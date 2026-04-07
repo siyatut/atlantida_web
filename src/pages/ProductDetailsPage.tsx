@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import { getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
 import { formatCatalogProductPrice } from "../utils/price";
+import { sanitizeWooHtml } from "../utils/sanitize-html";
 
 type ProductRouteState = {
   backPath?: string;
@@ -16,15 +17,6 @@ function getErrorMessage(error: unknown): string {
   }
 
   return "Не удалось загрузить товар.";
-}
-
-function stripHtml(html: string | null): string | null {
-  if (!html) {
-    return null;
-  }
-
-  const value = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return value !== "" ? value : null;
 }
 
 function getStockLabel(product: CatalogProduct): string | null {
@@ -107,12 +99,12 @@ function ProductDetailsPage() {
     };
   }, [isValidProductId, parsedProductId]);
 
-  const descriptionText = useMemo(() => {
+  const descriptionHtml = useMemo(() => {
     if (!product) {
       return null;
     }
 
-    return stripHtml(product.shortDescription) ?? stripHtml(product.description);
+    return sanitizeWooHtml(product.shortDescription ?? product.description);
   }, [product]);
 
   const stockLabel = useMemo(() => (product ? getStockLabel(product) : null), [product]);
@@ -157,7 +149,12 @@ function ProductDetailsPage() {
               <h1 className="mb-3 text-2xl font-semibold">{product.title}</h1>
               <p className="mb-4 text-xl font-medium">{formatCatalogProductPrice(product)}</p>
               {stockLabel ? <p className="mb-4 text-sm text-slate-700">Статус: {stockLabel}</p> : null}
-              {descriptionText ? <p className="text-sm leading-6 text-slate-700">{descriptionText}</p> : null}
+              {descriptionHtml ? (
+                <div
+                  className="prose prose-sm max-w-none text-slate-700"
+                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                />
+              ) : null}
             </div>
           </div>
         </article>
