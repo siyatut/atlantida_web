@@ -112,7 +112,7 @@ function ProductDetailsPage() {
   const fallbackCategory = product?.categories[0] ?? null;
   const breadcrumbBackPath =
     routeState.backPath ??
-    (fallbackCategory ? `/catalog/category/${fallbackCategory.id}/products` : "/catalog");
+    (fallbackCategory ? `/catalog/category/${fallbackCategory.id}` : "/catalog");
   const breadcrumbBackLabel =
     routeState.backLabel ?? (fallbackCategory ? fallbackCategory.name : "Каталог");
 
