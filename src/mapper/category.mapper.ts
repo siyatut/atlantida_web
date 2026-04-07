@@ -11,6 +11,7 @@ export function mapWooCategory(raw: WooStoreCategory): CatalogCategory {
     name: raw.name ?? "",
     slug: raw.slug ?? "",
     description: getString(raw.description),
+    count: typeof raw.count === "number" ? raw.count : null,
     parent: raw.parent ?? 0,
     image: raw.image?.src ?? null,
   };

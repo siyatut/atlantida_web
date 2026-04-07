@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
-import type { CatalogCategory, CatalogProduct } from "../types/catalog";
+import { getCatalogCategories } from "../services/catalog.service";
+import type { CatalogCategory } from "../types/catalog";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim() !== "") {
     return error.message;
   }
 
-  return "Не удалось загрузить товары категории.";
+  return "Не удалось загрузить категории.";
 }
 
 function CategoryPage() {
@@ -16,7 +16,6 @@ function CategoryPage() {
   const parsedCategoryId = Number(categoryId);
   const isValidCategoryId = Number.isFinite(parsedCategoryId) && parsedCategoryId > 0;
 
-  const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +26,14 @@ function CategoryPage() {
     }
 
     return categories.find((category) => category.id === String(parsedCategoryId)) ?? null;
+  }, [categories, isValidCategoryId, parsedCategoryId]);
+
+  const childCategories = useMemo(() => {
+    if (!isValidCategoryId) {
+      return [];
+    }
+
+    return categories.filter((category) => category.parent === parsedCategoryId);
   }, [categories, isValidCategoryId, parsedCategoryId]);
 
   useEffect(() => {
@@ -43,14 +50,17 @@ function CategoryPage() {
       setError(null);
 
       try {
-        const [loadedProducts, loadedCategories] = await Promise.all([
-          getCatalogProductsByCategory(parsedCategoryId),
-          getCatalogCategories(),
-        ]);
+        const loadedCategories = await getCatalogCategories();
 
         if (isMounted) {
-          setProducts(loadedProducts);
           setCategories(loadedCategories);
+
+          const hasSelectedCategory = loadedCategories.some(
+            (category) => category.id === String(parsedCategoryId),
+          );
+          if (!hasSelectedCategory) {
+            setError("Категория не найдена.");
+          }
         }
       } catch (loadError) {
         console.error("[CategoryPage] Failed to load category data", loadError);
@@ -84,29 +94,24 @@ function CategoryPage() {
         {activeCategory?.name ?? "Категория"}
       </h1>
 
-      {isLoading ? <p>Загрузка товаров...</p> : null}
+      {isLoading ? <p>Загрузка категорий...</p> : null}
       {error ? <p>{error}</p> : null}
 
-      {!isLoading && !error && products.length === 0 ? <p>В этой категории пока нет товаров.</p> : null}
+      {!isLoading && !error && childCategories.length === 0 ? (
+        <p>В этой категории пока нет подкатегорий.</p>
+      ) : null}
 
-      {!isLoading && !error && products.length > 0 ? (
+      {!isLoading && !error && childCategories.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <article key={product.id} className="rounded border p-4">
-              {product.image ? (
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  className="mb-4 h-48 w-full object-cover"
-                  loading="lazy"
-                />
-              ) : null}
-
-              <h2 className="mb-2 text-lg font-semibold">{product.title}</h2>
-              <p>
-                {product.price ? `${product.price}${product.priceCurrencySuffix ?? ""}` : "Цена не указана"}
-              </p>
-            </article>
+          {childCategories.map((category) => (
+            <Link to={`/catalog/category/${category.id}`} key={category.id}>
+              <article className="rounded border p-4 transition-colors hover:bg-[#F1FCFF]">
+                <h2 className="mb-2 text-lg font-semibold">{category.name}</h2>
+                <p className="text-sm text-slate-700">
+                  Товаров: {typeof category.count === "number" ? category.count : "—"}
+                </p>
+              </article>
+            </Link>
           ))}
         </div>
       ) : null}
