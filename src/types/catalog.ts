@@ -8,6 +8,9 @@ export type CatalogProduct = {
   id: string;
   title: string;
   slug: string | null;
+  isInStock: boolean | null;
+  stockStatus: string | null;
+  lowStockRemaining: number | null;
   price: string | null;
   regularPrice: string | null;
   salePrice: string | null;

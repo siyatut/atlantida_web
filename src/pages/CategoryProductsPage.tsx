@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
+import { formatCatalogProductPrice } from "../utils/price";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -9,44 +10,6 @@ function getErrorMessage(error: unknown): string {
   }
 
   return "Не удалось загрузить товары категории.";
-}
-
-function formatProductPrice(product: CatalogProduct): string {
-  if (!product.price) {
-    return "Цена не указана";
-  }
-
-  const minorUnit = product.priceCurrencyMinorUnit ?? 0;
-  const numericPrice = Number(product.price);
-
-  if (!Number.isFinite(numericPrice)) {
-    const prefix = product.priceCurrencyPrefix ?? "";
-    const suffix = product.priceCurrencySuffix ?? "";
-    return `${prefix}${product.price}${suffix}`.trim() || "Цена не указана";
-  }
-
-  const value = numericPrice / 10 ** minorUnit;
-  const locale = "ru-RU";
-
-  if (product.priceCurrencyCode) {
-    return new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: product.priceCurrencyCode,
-      minimumFractionDigits: minorUnit,
-      maximumFractionDigits: minorUnit,
-    }).format(value);
-  }
-
-  const formattedNumber = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: minorUnit,
-    maximumFractionDigits: minorUnit,
-  }).format(value);
-
-  const symbol = product.priceCurrencySymbol ?? "";
-  const prefix = product.priceCurrencyPrefix ?? "";
-  const suffix = product.priceCurrencySuffix ?? "";
-
-  return `${prefix}${symbol}${formattedNumber}${suffix}`.trim();
 }
 
 function CategoryProductsPage() {
@@ -135,19 +98,29 @@ function CategoryProductsPage() {
       {!isLoading && !error && products.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
-            <article key={product.id} className="rounded border p-4">
-              {product.image ? (
-                <img
-                  src={product.image}
-                  alt={product.title}
-                  className="mb-4 h-48 w-full object-cover"
-                  loading="lazy"
-                />
-              ) : null}
+            <Link
+              key={product.id}
+              to={`/catalog/product/${product.id}`}
+              state={{
+                backPath: `/catalog/category/${categoryId}/products`,
+                backLabel: activeCategory?.name ?? "Товары категории",
+                categoryId,
+              }}
+            >
+              <article className="rounded border p-4 transition-colors hover:bg-[#F1FCFF]">
+                {product.image ? (
+                  <img
+                    src={product.image}
+                    alt={product.title}
+                    className="mb-4 h-48 w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : null}
 
-              <h2 className="mb-2 text-lg font-semibold">{product.title}</h2>
-              <p>{formatProductPrice(product)}</p>
-            </article>
+                <h2 className="mb-2 text-lg font-semibold">{product.title}</h2>
+                <p>{formatCatalogProductPrice(product)}</p>
+              </article>
+            </Link>
           ))}
         </div>
       ) : null}

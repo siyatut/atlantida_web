@@ -14,6 +14,9 @@ export function mapWooProduct(raw: WooStoreProduct): CatalogProduct {
     id: String(raw.id),
     title: raw.name ?? "Товар",
     slug: getString(raw.slug),
+    isInStock: typeof raw.is_in_stock === "boolean" ? raw.is_in_stock : null,
+    stockStatus: getString(raw.stock_status),
+    lowStockRemaining: typeof raw.low_stock_remaining === "number" ? raw.low_stock_remaining : null,
     price:
       getString(prices?.price) ??
       getString(raw.price) ??

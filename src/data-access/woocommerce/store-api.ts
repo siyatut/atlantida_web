@@ -68,6 +68,9 @@ export type WooStoreProduct = {
   id: number;
   name?: string;
   slug?: string;
+  is_in_stock?: boolean;
+  stock_status?: string;
+  low_stock_remaining?: number | null;
   price?: string;
   regular_price?: string;
   sale_price?: string;
