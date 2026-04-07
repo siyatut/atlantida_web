@@ -23,6 +23,11 @@ export function mapWooProduct(raw: WooStoreProduct): CatalogProduct {
       getString(raw.sale_price),
     regularPrice: getString(prices?.regular_price) ?? getString(raw.regular_price),
     salePrice: getString(prices?.sale_price) ?? getString(raw.sale_price),
+    priceCurrencyCode: getString(prices?.currency_code),
+    priceCurrencySymbol: getString(prices?.currency_symbol),
+    priceCurrencyMinorUnit:
+      typeof prices?.currency_minor_unit === "number" ? prices.currency_minor_unit : null,
+    priceCurrencyPrefix: getString(prices?.currency_prefix),
     priceCurrencySuffix: getString(prices?.currency_suffix),
     category: categories.length > 0 ? getString(categories[0]?.slug) : null,
     categories: categories.map((category) => ({

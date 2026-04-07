@@ -11,6 +11,10 @@ export type CatalogProduct = {
   price: string | null;
   regularPrice: string | null;
   salePrice: string | null;
+  priceCurrencyCode: string | null;
+  priceCurrencySymbol: string | null;
+  priceCurrencyMinorUnit: number | null;
+  priceCurrencyPrefix: string | null;
   priceCurrencySuffix: string | null;
   category: string | null;
   categories: CatalogProductCategory[];
