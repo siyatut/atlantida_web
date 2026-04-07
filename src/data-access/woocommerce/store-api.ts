@@ -83,6 +83,7 @@ export type WooStoreCategory = {
   id: number;
   name?: string;
   slug?: string;
+  description?: string;
   parent?: number;
   image?: WooStoreImage | null;
 };

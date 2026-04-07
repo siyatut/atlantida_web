@@ -25,6 +25,7 @@ export type CatalogCategory = {
   id: string;
   name: string;
   slug: string;
+  description: string | null;
   parent: number;
   image: string | null;
 };
