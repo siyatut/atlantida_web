@@ -1,63 +1,149 @@
 const API_BASE = "/api/wp-json/wc/store/v1";
 
 type StoreApiQueryValue = string | number | boolean | undefined;
-type WooStoreProduct = {
-  id: number;
+type StoreApiErrorPayload = {
+  message?: unknown;
+  code?: unknown;
+};
+
+class WooStoreApiRequestError extends Error {
+  status: number;
+  statusText: string;
+  url: string;
+  code?: string;
+
+  constructor(params: {
+    message: string;
+    status: number;
+    statusText: string;
+    url: string;
+    code?: string;
+  }) {
+    super(params.message);
+    this.name = "WooStoreApiRequestError";
+    this.status = params.status;
+    this.statusText = params.statusText;
+    this.url = params.url;
+    this.code = params.code;
+  }
+}
+
+export type WooStoreImage = {
+  id?: number;
+  src?: string;
+  thumbnail?: string;
+  srcset?: string;
+  sizes?: string;
   name?: string;
+  alt?: string;
+};
+
+export type WooStoreProductPriceRange = {
+  min_amount?: string;
+  max_amount?: string;
+};
+
+export type WooStoreProductPrices = {
+  currency_code?: string;
+  currency_symbol?: string;
+  currency_minor_unit?: number;
+  currency_decimal_separator?: string;
+  currency_thousand_separator?: string;
+  currency_prefix?: string;
+  currency_suffix?: string;
   price?: string;
   regular_price?: string;
   sale_price?: string;
-  prices?: {
-    price?: string;
-    currency_suffix?: string;
-  };
+  price_range?: WooStoreProductPriceRange | null;
+};
+
+export type WooStoreProductCategory = {
+  id: number;
+  name?: string;
+  slug?: string;
+  link?: string;
+};
+
+export type WooStoreProduct = {
+  id: number;
+  name?: string;
+  slug?: string;
+  price?: string;
+  regular_price?: string;
+  sale_price?: string;
+  prices?: WooStoreProductPrices;
   short_description?: string;
   description?: string;
   permalink?: string;
-  images?: Array<{
-    src?: string;
-  }>;
-  categories?: Array<{
-    slug?: string;
-  }>;
+  images?: WooStoreImage[];
+  categories?: WooStoreProductCategory[];
 };
-type WooStoreCategory = {
+
+export type WooStoreCategory = {
   id: number;
   name?: string;
   slug?: string;
   parent?: number;
+  image?: WooStoreImage | null;
 };
+
+function parseStoreApiErrorPayload(responseBody?: string): StoreApiErrorPayload | null {
+  if (!responseBody || responseBody.trim() === "") {
+    return null;
+  }
+  try {
+    return JSON.parse(responseBody) as StoreApiErrorPayload;
+  } catch {
+    return null;
+  }
+}
 
 function buildStoreApiErrorMessage(baseMessage: string, responseBody?: string): string {
   if (!responseBody) {
     return baseMessage;
   }
 
-  try {
-    const parsedBody = JSON.parse(responseBody) as { message?: unknown; code?: unknown };
-    const details =
-      typeof parsedBody.message === "string"
-        ? parsedBody.message
-        : typeof parsedBody.code === "string"
-          ? parsedBody.code
-          : responseBody;
-
-    return `${baseMessage}. ${details}`;
-  } catch {
+  const payload = parseStoreApiErrorPayload(responseBody);
+  if (!payload) {
     return `${baseMessage}. ${responseBody}`;
   }
+
+  const details =
+    typeof payload.message === "string"
+      ? payload.message
+      : typeof payload.code === "string"
+        ? payload.code
+        : responseBody;
+
+  return `${baseMessage}. ${details}`;
+}
+
+function isWooStoreApiRequestError(error: unknown): error is WooStoreApiRequestError {
+  return error instanceof WooStoreApiRequestError;
+}
+
+function shouldUseSingleProductFallback(error: unknown): boolean {
+  if (!isWooStoreApiRequestError(error)) {
+    return false;
+  }
+
+  if (error.status === 404) {
+    return true;
+  }
+
+  return error.status === 400 && error.code === "rest_no_route";
 }
 
 async function fetchStoreApi<T>(path: string, query?: Record<string, StoreApiQueryValue>): Promise<T> {
   const url = new URL(`${API_BASE}${path}`, window.location.origin);
 
-if (query) {
-  for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined) {
-      url.searchParams.set(key, String(value));
+  if (query) {
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined) {
+        url.searchParams.set(key, String(value));
+      }
     }
   }
-}
 
   let response: Response;
 
@@ -80,6 +166,9 @@ if (query) {
   const responseBody = await response.text();
 
   if (!response.ok) {
+    const errorPayload = parseStoreApiErrorPayload(responseBody);
+    const errorCode = typeof errorPayload?.code === "string" ? errorPayload.code : undefined;
+
     console.error("[Woo Store API] Request failed", {
       url: url.toString(),
       status: response.status,
@@ -87,12 +176,16 @@ if (query) {
       responseBody,
     });
 
-    throw new Error(
-      buildStoreApiErrorMessage(
+    throw new WooStoreApiRequestError({
+      message: buildStoreApiErrorMessage(
         `Woo Store API request failed: ${response.status} ${response.statusText}`,
         responseBody,
       ),
-    );
+      status: response.status,
+      statusText: response.statusText,
+      url: url.toString(),
+      code: errorCode,
+    });
   }
 
   try {
@@ -117,9 +210,30 @@ export async function fetchWooProducts(categoryId?: number): Promise<WooStorePro
   });
 }
 
+export async function fetchWooProductsByCategory(categoryId: number): Promise<WooStoreProduct[]> {
+  return fetchWooProducts(categoryId);
+}
+
 export async function fetchWooCategories(): Promise<WooStoreCategory[]> {
   return fetchStoreApi<WooStoreCategory[]>("/products/categories", {
     hide_empty: true,
     per_page: 100,
   });
+}
+
+export async function fetchWooProductById(productId: number): Promise<WooStoreProduct | null> {
+  try {
+    return await fetchStoreApi<WooStoreProduct>(`/products/${productId}`);
+  } catch (error) {
+    if (!shouldUseSingleProductFallback(error)) {
+      throw error;
+    }
+  }
+
+  const fallbackProducts = await fetchStoreApi<WooStoreProduct[]>("/products", {
+    include: productId,
+    per_page: 1,
+  });
+
+  return fallbackProducts.find((product) => product.id === productId) ?? null;
 }
