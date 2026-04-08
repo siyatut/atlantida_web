@@ -139,40 +139,50 @@ function CatalogPage() {
         </p>
 
         {isLoading ? <p className="text-base text-[#6B778B]">Загрузка категорий...</p> : null}
-
         {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
 
         {!isLoading && !error ? (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {rootCategories.map((category) => {
-            const childCount = childCountByParentId[category.id] ?? 0;
-            const presentation = CATEGORY_PRESENTATION_BY_SLUG[category.slug];
-            const description = presentation?.description ?? getCategoryDescription(category.description);
-            const Icon = presentation?.Icon;
+            {rootCategories.map((category) => {
+              const childCount = childCountByParentId[category.id] ?? 0;
+              const presentation = CATEGORY_PRESENTATION_BY_SLUG[category.slug];
+              const description =
+                presentation?.description ?? getCategoryDescription(category.description);
+              const Icon = presentation?.Icon;
 
-            return (
-              <Link to={`/catalog/category/${category.id}`} key={category.id}>
-                <article className="group flex h-[180px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-all duration-300 hover:bg-white hover:shadow-sm">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#CBEAF6] text-2xl text-[#2F84BF] transition-colors duration-300 group-hover:text-[#1E6FA8]">
-                    {Icon ? <Icon className="h-8 w-8 transition-all duration-300 group-hover:scale-110" /> : null}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
-                    <div>
-                      <h2 className="mb-2 text-xl font-semibold leading-snug text-[#394452]">
-                        {category.name}
-                      </h2>
-                      <p className="line-clamp-3 text-sm leading-snug text-[#68758A]">
-                        {description}
+              return (
+                <Link
+                  to={`/catalog/category/${category.id}`}
+                  key={category.id}
+                  state={{
+                    parentCategoryId: null,
+                    parentCategoryName: "Каталог",
+                    currentCategoryName: category.name,
+                  }}
+                >
+                  <article className="group flex h-[180px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-all duration-300 hover:bg-white hover:shadow-sm">
+                    <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#CBEAF6] text-2xl text-[#2F84BF] transition-colors duration-300 group-hover:text-[#1E6FA8]">
+                      {Icon ? (
+                        <Icon className="h-8 w-8 transition-all duration-300 group-hover:scale-110" />
+                      ) : null}
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
+                      <div>
+                        <h2 className="mb-2 text-xl font-semibold leading-snug text-[#394452]">
+                          {category.name}
+                        </h2>
+                        <p className="line-clamp-3 text-sm leading-snug text-[#68758A]">
+                          {description}
+                        </p>
+                      </div>
+                      <p className="pt-2 text-sm font-medium text-[#4BADE8]">
+                        {childCount} {getSubcategoryLabel(childCount)} →
                       </p>
                     </div>
-                    <p className="pt-2 text-sm font-medium text-[#4BADE8]">
-                      {childCount} {getSubcategoryLabel(childCount)} →
-                    </p>
-                  </div>
-                </article>
-              </Link>
-            );
-          })}
+                  </article>
+                </Link>
+              );
+            })}
           </div>
         ) : null}
       </div>

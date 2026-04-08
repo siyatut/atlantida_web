@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
 import { formatCatalogProductPrice } from "../utils/price";
+
+type CategoryRouteState = {
+  parentCategoryId?: string | null;
+  parentCategoryName?: string | null;
+  currentCategoryName?: string | null;
+  ancestorCategoryId?: string | null;
+  ancestorCategoryName?: string | null;
+};
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -14,6 +22,9 @@ function getErrorMessage(error: unknown): string {
 
 function CategoryPage() {
   const { categoryId } = useParams<{ categoryId: string }>();
+  const location = useLocation();
+  const routeState = (location.state ?? {}) as CategoryRouteState;
+
   const parsedCategoryId = Number(categoryId);
   const isValidCategoryId = Number.isFinite(parsedCategoryId) && parsedCategoryId > 0;
 
@@ -46,6 +57,51 @@ function CategoryPage() {
     return categories.find((category) => category.id === String(activeCategory.parent)) ?? null;
   }, [activeCategory, categories]);
 
+  const explicitParentCategoryId =
+    typeof routeState.parentCategoryId === "string" && routeState.parentCategoryId.trim() !== ""
+      ? routeState.parentCategoryId
+      : null;
+
+  const explicitParentCategoryName =
+    typeof routeState.parentCategoryName === "string" && routeState.parentCategoryName.trim() !== ""
+      ? routeState.parentCategoryName
+      : null;
+
+  const explicitCurrentCategoryName =
+    typeof routeState.currentCategoryName === "string" && routeState.currentCategoryName.trim() !== ""
+      ? routeState.currentCategoryName
+      : null;
+
+  const explicitAncestorCategoryId =
+    typeof routeState.ancestorCategoryId === "string" && routeState.ancestorCategoryId.trim() !== ""
+      ? routeState.ancestorCategoryId
+      : null;
+
+  const explicitAncestorCategoryName =
+    typeof routeState.ancestorCategoryName === "string" &&
+    routeState.ancestorCategoryName.trim() !== ""
+      ? routeState.ancestorCategoryName
+      : null;
+
+  const resolvedCurrentCategoryName =
+    explicitCurrentCategoryName ?? activeCategory?.name ?? "Категория";
+
+  const backPath =
+    explicitParentCategoryId
+      ? `/catalog/category/${explicitParentCategoryId}`
+      : parentCategory
+        ? `/catalog/category/${parentCategory.id}`
+        : "/catalog";
+
+  const backLabel =
+    explicitParentCategoryName === "Каталог"
+      ? "Назад к каталогу"
+      : explicitParentCategoryName
+        ? `Назад к категории «${explicitParentCategoryName}»`
+        : parentCategory
+          ? `Назад к категории «${parentCategory.name}»`
+          : "Назад к каталогу";
+
   useEffect(() => {
     if (!isValidCategoryId) {
       setError("Некорректный идентификатор категории.");
@@ -63,26 +119,30 @@ function CategoryPage() {
       try {
         const loadedCategories = await getCatalogCategories();
 
-        if (isMounted) {
-          setCategories(loadedCategories);
+        if (!isMounted) {
+          return;
+        }
 
-          const selectedCategory = loadedCategories.find(
-            (category) => category.id === String(parsedCategoryId),
-          );
-          if (!selectedCategory) {
-            setError("Категория не найдена.");
-            return;
-          }
+        setCategories(loadedCategories);
 
-          const selectedCategoryChildren = loadedCategories.filter(
-            (category) => category.parent === parsedCategoryId,
-          );
+        const selectedCategory = loadedCategories.find(
+          (category) => category.id === String(parsedCategoryId),
+        );
 
-          if (selectedCategoryChildren.length === 0) {
-            const loadedProducts = await getCatalogProductsByCategory(parsedCategoryId);
-            if (isMounted) {
-              setProducts(loadedProducts);
-            }
+        if (!selectedCategory) {
+          setError("Категория не найдена.");
+          return;
+        }
+
+        const selectedCategoryChildren = loadedCategories.filter(
+          (category) => category.parent === parsedCategoryId,
+        );
+
+        if (selectedCategoryChildren.length === 0) {
+          const loadedProducts = await getCatalogProductsByCategory(parsedCategoryId);
+
+          if (isMounted) {
+            setProducts(loadedProducts);
           }
         }
       } catch (loadError) {
@@ -110,17 +170,29 @@ function CategoryPage() {
       <div className="mx-auto max-w-[1240px]">
         <div className="mb-10">
           <Link
-            to={parentCategory ? `/catalog/category/${parentCategory.id}` : "/catalog"}
+            to={backPath}
+            state={
+              explicitParentCategoryId
+                ? {
+                    parentCategoryId: explicitAncestorCategoryId,
+                    parentCategoryName: explicitAncestorCategoryName ?? "Каталог",
+                    currentCategoryName: explicitParentCategoryName,
+                    ancestorCategoryId: null,
+                    ancestorCategoryName: null,
+                  }
+                : undefined
+            }
             className="inline-flex items-center gap-2 text-base font-medium text-[#4A9DD4] transition-colors hover:text-[#2F84BF]"
           >
             <span aria-hidden="true">‹</span>
-            {parentCategory ? `Назад к категории «${parentCategory.name}»` : "Назад к каталогу"}
+            {backLabel}
           </Link>
         </div>
 
         <h1 className="mb-2 text-3xl font-semibold leading-snug text-[#234579]">
-          {activeCategory?.name ?? "Категория"}
+          {resolvedCurrentCategoryName}
         </h1>
+
         {activeCategory?.description ? (
           <p className="mb-10 line-clamp-2 text-base leading-snug text-[#6B778B]">
             {activeCategory.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}
@@ -135,7 +207,17 @@ function CategoryPage() {
         {!isLoading && !error && childCategories.length > 0 ? (
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {childCategories.map((category) => (
-              <Link to={`/catalog/category/${category.id}`} key={category.id}>
+              <Link
+                to={`/catalog/category/${category.id}`}
+                key={category.id}
+                state={{
+                  parentCategoryId: String(parsedCategoryId),
+                  parentCategoryName: resolvedCurrentCategoryName,
+                  currentCategoryName: category.name,
+                  ancestorCategoryId: explicitParentCategoryId,
+                  ancestorCategoryName: explicitParentCategoryName,
+                }}
+              >
                 <article className="flex h-[150px] items-center justify-between rounded-3xl border border-[#D4DFEA] bg-[#F8FAFC] px-6 transition-colors hover:bg-white">
                   <div className="min-w-0">
                     <h2 className="mb-2 text-xl font-semibold leading-snug text-[#394452]">
@@ -164,7 +246,14 @@ function CategoryPage() {
                 to={`/catalog/product/${product.id}`}
                 state={{
                   backPath: `/catalog/category/${parsedCategoryId}`,
-                  backLabel: activeCategory?.name ?? "Категория",
+                  backLabel: resolvedCurrentCategoryName,
+                  backState: {
+                    parentCategoryId: explicitParentCategoryId,
+                    parentCategoryName: explicitParentCategoryName,
+                    currentCategoryName: resolvedCurrentCategoryName,
+                    ancestorCategoryId: explicitAncestorCategoryId,
+                    ancestorCategoryName: explicitAncestorCategoryName,
+                  },
                   categoryId: String(parsedCategoryId),
                 }}
               >

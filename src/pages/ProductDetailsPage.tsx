@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
 import { formatCatalogProductPrice } from "../utils/price";
@@ -9,6 +9,13 @@ type ProductRouteState = {
   backPath?: string;
   backLabel?: string;
   categoryId?: string;
+  backState?: {
+    parentCategoryId?: string | null;
+    parentCategoryName?: string | null;
+    currentCategoryName?: string | null;
+    ancestorCategoryId?: string | null;
+    ancestorCategoryName?: string | null;
+  };
 };
 
 function getErrorMessage(error: unknown): string {
@@ -24,15 +31,18 @@ function getStockLabel(product: CatalogProduct): string | null {
     if (product.stockStatus === "instock") {
       return "В наличии";
     }
+
     if (product.stockStatus === "outofstock") {
       return "Нет в наличии";
     }
+
     return product.stockStatus;
   }
 
   if (product.isInStock === true) {
     return "В наличии";
   }
+
   if (product.isInStock === false) {
     return "Нет в наличии";
   }
@@ -43,6 +53,7 @@ function getStockLabel(product: CatalogProduct): string | null {
 function ProductDetailsPage() {
   const { productId } = useParams<{ productId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const routeState = (location.state ?? {}) as ProductRouteState;
 
   const parsedProductId = Number(productId);
@@ -109,22 +120,34 @@ function ProductDetailsPage() {
 
   const stockLabel = useMemo(() => (product ? getStockLabel(product) : null), [product]);
 
+  const explicitBackPath =
+    typeof routeState.backPath === "string" && routeState.backPath.trim() !== ""
+      ? routeState.backPath
+      : null;
+
   const fallbackCategory = product?.categories[0] ?? null;
+
   const breadcrumbBackPath =
-    routeState.backPath ??
-    (fallbackCategory ? `/catalog/category/${fallbackCategory.id}` : "/catalog");
+    explicitBackPath ?? (fallbackCategory ? `/catalog/category/${fallbackCategory.id}` : "/catalog");
+
+  function handleBackNavigation() {
+    navigate(breadcrumbBackPath, {
+      state: routeState.backState,
+    });
+  }
 
   return (
     <main className="px-6 py-12 md:px-8 md:py-16">
       <div className="mx-auto max-w-[1240px]">
         <div className="mb-10">
-          <Link
-            to={breadcrumbBackPath}
+          <button
+            type="button"
+            onClick={handleBackNavigation}
             className="inline-flex items-center gap-2 text-base font-medium text-[#4A9DD4] transition-colors hover:text-[#2F84BF]"
           >
             <span aria-hidden="true">‹</span>
             Назад к списку товаров
-          </Link>
+          </button>
         </div>
 
         {isLoading ? <p className="text-base text-[#6B778B]">Загрузка товара...</p> : null}
@@ -152,9 +175,11 @@ function ProductDetailsPage() {
                 <h1 className="mb-4 text-3xl font-semibold leading-snug text-[#234579]">
                   {product.title}
                 </h1>
+
                 <p className="mb-5 text-xl font-medium leading-snug text-[#4BADE8]">
                   {formatCatalogProductPrice(product)}
                 </p>
+
                 {stockLabel ? (
                   <p className="mb-7 inline-flex rounded-2xl bg-[#D8F0DD] px-4 py-2 text-sm font-medium text-[#3E8A57]">
                     ✓ {stockLabel}
