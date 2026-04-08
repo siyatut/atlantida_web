@@ -123,18 +123,20 @@ function CatalogPage() {
 
             return (
               <Link to={`/catalog/category/${category.id}`} key={category.id}>
-                <article className="flex h-[210px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-colors hover:bg-white">
+                <article className="flex h-[180px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-colors hover:bg-white">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#CBEAF6] text-2xl text-[#2F84BF]">
                     {icon}
                   </div>
-                  <div className="min-w-0">
-                    <h2 className="mb-2 text-xl font-semibold leading-snug text-[#394452]">
-                      {category.name}
-                    </h2>
-                    <p className="mb-5 line-clamp-2 text-sm leading-snug text-[#68758A]">
-                      {description}
-                    </p>
-                    <p className="text-sm font-medium text-[#4BADE8]">
+                  <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
+                    <div>
+                      <h2 className="mb-2 text-xl font-semibold leading-snug text-[#394452]">
+                        {category.name}
+                      </h2>
+                      <p className="line-clamp-3 text-sm leading-snug text-[#68758A]">
+                        {description}
+                      </p>
+                    </div>
+                    <p className="pt-2 text-sm font-medium text-[#4BADE8]">
                       {childCount} подкатегорий →
                     </p>
                   </div>
