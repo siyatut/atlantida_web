@@ -20,6 +20,26 @@ function getCategoryDescription(description: string | null): string {
   return plainText !== "" ? plainText : "Исследуйте подборку товаров в этой категории.";
 }
 
+function getSubcategoryLabel(count: number): string {
+  const lastTwoDigits = count % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return "подкатегорий";
+  }
+
+  const lastDigit = count % 10;
+
+  if (lastDigit === 1) {
+    return "подкатегория";
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return "подкатегории";
+  }
+
+  return "подкатегорий";
+}
+
 const CATEGORY_PRESENTATION_BY_SLUG: Record<string, { description: string; icon: string }> = {
   rybki: {
     description: "Корма, аксессуары и все необходимое для ухода за аквариумными рыбками.",
@@ -137,7 +157,7 @@ function CatalogPage() {
                       </p>
                     </div>
                     <p className="pt-2 text-sm font-medium text-[#4BADE8]">
-                      {childCount} подкатегорий →
+                      {childCount} {getSubcategoryLabel(childCount)} →
                     </p>
                   </div>
                 </article>
