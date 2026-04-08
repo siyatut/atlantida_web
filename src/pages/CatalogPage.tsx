@@ -20,7 +20,32 @@ function getCategoryDescription(description: string | null): string {
   return plainText !== "" ? plainText : "Исследуйте подборку товаров в этой категории.";
 }
 
-const CATEGORY_ICONS = ["✣", "📖", "♡", "◍", "◎"];
+const CATEGORY_PRESENTATION_BY_SLUG: Record<string, { description: string; icon: string }> = {
+  rybki: {
+    description: "Корма, аксессуары и все необходимое для ухода за аквариумными рыбками.",
+    icon: "✣",
+  },
+  gryzuny: {
+    description: "Товары для грызунов: питание, наполнители, клетки и ежедневный уход.",
+    icon: "◎",
+  },
+  koshki: {
+    description: "Подборка кормов, игрушек и аксессуаров для комфортной жизни кошек.",
+    icon: "♡",
+  },
+  sobaki: {
+    description: "Все для собак: корма, игрушки, товары для прогулок и ухода.",
+    icon: "◍",
+  },
+  pticzy: {
+    description: "Клетки, корма и аксессуары для птиц и заботы о них каждый день.",
+    icon: "📖",
+  },
+  reptilii: {
+    description: "Террариумы, лампы, корма и аксессуары для содержания рептилий.",
+    icon: "◌",
+  },
+};
 
 function CatalogPage() {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
@@ -92,8 +117,9 @@ function CatalogPage() {
           <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {rootCategories.map((category) => {
             const childCount = childCountByParentId[category.id] ?? 0;
-            const description = getCategoryDescription(category.description);
-            const icon = CATEGORY_ICONS[Number(category.id) % CATEGORY_ICONS.length];
+            const presentation = CATEGORY_PRESENTATION_BY_SLUG[category.slug];
+            const description = presentation?.description ?? getCategoryDescription(category.description);
+            const icon = presentation?.icon ?? "✣";
 
             return (
               <Link to={`/catalog/category/${category.id}`} key={category.id}>
