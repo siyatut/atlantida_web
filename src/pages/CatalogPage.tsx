@@ -1,5 +1,12 @@
+import type { ComponentType, SVGProps } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import BirdIcon from "../assets/icons_category/bird.svg?react";
+import CatIcon from "../assets/icons_category/cat.svg?react";
+import DogIcon from "../assets/icons_category/dog.svg?react";
+import FishIcon from "../assets/icons_category/fish.svg?react";
+import MouseIcon from "../assets/icons_category/mouse.svg?react";
+import ReptileIcon from "../assets/icons_category/reptile.svg?react";
 import { getCatalogCategories } from "../services/catalog.service";
 import type { CatalogCategory } from "../types/catalog";
 
@@ -40,30 +47,32 @@ function getSubcategoryLabel(count: number): string {
   return "подкатегорий";
 }
 
-const CATEGORY_PRESENTATION_BY_SLUG: Record<string, { description: string; icon: string }> = {
+type CategoryIcon = ComponentType<SVGProps<SVGSVGElement>>;
+
+const CATEGORY_PRESENTATION_BY_SLUG: Record<string, { description: string; Icon: CategoryIcon }> = {
   rybki: {
     description: "Корма, аксессуары и все необходимое для ухода за аквариумными рыбками.",
-    icon: "✣",
+    Icon: FishIcon,
   },
   gryzuny: {
-    description: "Товары для грызунов: питание, наполнители, клетки и ежедневный уход.",
-    icon: "◎",
+    description: "Товары для грызунов: питание, наполнители, клетки и уход.",
+    Icon: MouseIcon,
   },
   koshki: {
-    description: "Подборка кормов, игрушек и аксессуаров для комфортной жизни кошек.",
-    icon: "♡",
+    description: "Подборка кормов, игрушек и аксессуаров для комфортной жизни.",
+    Icon: CatIcon,
   },
   sobaki: {
     description: "Все для собак: корма, игрушки, товары для прогулок и ухода.",
-    icon: "◍",
+    Icon: DogIcon,
   },
   pticzy: {
     description: "Клетки, корма и аксессуары для птиц и заботы о них каждый день.",
-    icon: "📖",
+    Icon: BirdIcon,
   },
   reptilii: {
     description: "Террариумы, лампы, корма и аксессуары для содержания рептилий.",
-    icon: "◌",
+    Icon: ReptileIcon,
   },
 };
 
@@ -139,13 +148,13 @@ function CatalogPage() {
             const childCount = childCountByParentId[category.id] ?? 0;
             const presentation = CATEGORY_PRESENTATION_BY_SLUG[category.slug];
             const description = presentation?.description ?? getCategoryDescription(category.description);
-            const icon = presentation?.icon ?? "✣";
+            const Icon = presentation?.Icon;
 
             return (
               <Link to={`/catalog/category/${category.id}`} key={category.id}>
                 <article className="flex h-[180px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-colors hover:bg-white">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#CBEAF6] text-2xl text-[#2F84BF]">
-                    {icon}
+                    {Icon ? <Icon className="h-8 w-8" /> : null}
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
                     <div>
