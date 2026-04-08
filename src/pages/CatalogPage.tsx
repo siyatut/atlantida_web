@@ -152,9 +152,9 @@ function CatalogPage() {
 
             return (
               <Link to={`/catalog/category/${category.id}`} key={category.id}>
-                <article className="flex h-[180px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-colors hover:bg-white">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#CBEAF6] text-2xl text-[#2F84BF]">
-                    {Icon ? <Icon className="h-8 w-8" /> : null}
+                <article className="group flex h-[180px] items-start gap-4 rounded-[24px] border border-[#BCE1F1] bg-[#F6F9FC] p-6 transition-all duration-300 hover:bg-white hover:shadow-sm">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#CBEAF6] text-2xl text-[#2F84BF] transition-colors duration-300 group-hover:text-[#1E6FA8]">
+                    {Icon ? <Icon className="h-8 w-8 transition-all duration-300 group-hover:scale-110" /> : null}
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col justify-between self-stretch">
                     <div>
