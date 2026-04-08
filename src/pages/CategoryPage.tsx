@@ -218,16 +218,16 @@ function CategoryPage() {
                   ancestorCategoryName: explicitParentCategoryName,
                 }}
               >
-                <article className="flex h-[150px] items-center justify-between rounded-3xl border border-[#D4DFEA] bg-[#F8FAFC] px-6 transition-colors hover:bg-white">
+                <article className="flex h-[132px] items-center justify-between rounded-[24px] border border-[#D4DFEA] bg-[#F8FAFC] px-5 transition-colors hover:bg-white">
                   <div className="min-w-0">
-                    <h2 className="mb-2 text-xl font-semibold leading-snug text-[#394452]">
+                    <h2 className="mb-1.5 text-lg font-semibold leading-snug text-[#394452]">
                       {category.name}
                     </h2>
-                    <p className="text-sm leading-snug text-[#79869A]">
+                    <p className="text-[13px] leading-snug text-[#79869A]">
                       {typeof category.count === "number" ? `${category.count} товаров` : "—"}
                     </p>
                   </div>
-                  <span className="ml-4 text-3xl font-light text-[#A9DCEB]">›</span>
+                  <span className="ml-3 text-[28px] font-light text-[#A9DCEB]">›</span>
                 </article>
               </Link>
             ))}
@@ -243,6 +243,7 @@ function CategoryPage() {
             {products.map((product) => (
               <Link
                 key={product.id}
+                className="h-full"
                 to={`/catalog/product/${product.id}`}
                 state={{
                   backPath: `/catalog/category/${parsedCategoryId}`,
@@ -257,7 +258,7 @@ function CategoryPage() {
                   categoryId: String(parsedCategoryId),
                 }}
               >
-                <article className="relative overflow-hidden rounded-[22px] border border-[#C6DFEC] bg-[#F8FAFC] p-4 transition-colors hover:bg-white">
+                <article className="relative flex h-full flex-col overflow-hidden rounded-[22px] border border-[#C6DFEC] bg-[#F8FAFC] p-4 transition-colors hover:bg-white">
                   <button
                     type="button"
                     className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl text-[#8792A3] shadow-sm"
@@ -277,10 +278,10 @@ function CategoryPage() {
                     <div className="mb-4 h-64 w-full rounded-xl bg-[#EEF3F7]" />
                   )}
 
-                  <h2 className="mb-2 text-base font-medium leading-snug text-[#3F4A58] md:text-lg">
+                  <h2 className="mb-3 line-clamp-2 text-base font-medium leading-snug text-[#3F4A58] md:text-lg">
                     {product.title}
                   </h2>
-                  <p className="text-xl font-medium leading-snug text-[#4BADE8]">
+                  <p className="mt-auto text-xl font-medium leading-snug text-[#4BADE8]">
                     {formatCatalogProductPrice(product)}
                   </p>
                 </article>
