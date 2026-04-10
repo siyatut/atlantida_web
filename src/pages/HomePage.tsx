@@ -34,11 +34,11 @@ function getErrorMessage(error: unknown): string {
 
 function getCategoryDescription(description: string | null): string {
   if (!description) {
-    return "Подберём все необходимое для ухода, кормления и комфортной жизни питомца.";
+    return "Подберём всё необходимое для ухода, кормления и комфортной жизни питомца.";
   }
 
   const plainText = description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return plainText !== "" ? plainText : "Подберём все необходимое для ухода и заботы.";
+  return plainText !== "" ? plainText : "Подберём всё необходимое для ухода и заботы.";
 }
 
 const CATEGORY_PRESENTATION_BY_SLUG: Record<string, CategoryPresentation> = {
@@ -58,12 +58,14 @@ const CATEGORY_PRESENTATION_BY_SLUG: Record<string, CategoryPresentation> = {
     Icon: CatIcon,
   },
   sobaki: {
-    description: "Товары для прогулок, кормления, ухода и активной жизни вашего четвероногого друга.",
+    description:
+      "Товары для прогулок, кормления, ухода и активной жизни вашего четвероногого друга.",
     shortDescription: "Товары для четвероногих друзей",
     Icon: DogIcon,
   },
   pticzy: {
-    description: "Клетки, корма и аксессуары для птиц, чтобы ежедневный уход не доставлял хлопот.",
+    description:
+      "Клетки, корма и аксессуары для птиц, чтобы ежедневный уход не доставлял хлопот.",
     shortDescription: "Корма, клетки и аксессуары",
     Icon: BirdIcon,
   },
@@ -73,15 +75,6 @@ const CATEGORY_PRESENTATION_BY_SLUG: Record<string, CategoryPresentation> = {
     Icon: ReptileIcon,
   },
 };
-
-function QualityIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
-      <circle cx="12" cy="12" r="8" />
-      <path d="m8.5 12 2.2 2.2 4.8-5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function DeliveryIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -154,33 +147,39 @@ function ExperienceIcon(props: SVGProps<SVGSVGElement>) {
 
 const BENEFITS: Benefit[] = [
   {
-    title: "Гарантия качества",
-    description: "Работаем с проверенными поставщиками и следим за качеством каждой категории.",
-    Icon: QualityIcon,
-  },
-  {
-    title: "Быстрая доставка",
-    description: "Помогаем быстро получить нужные товары без лишнего ожидания и сложностей.",
-    Icon: DeliveryIcon,
-  },
-  {
-    title: "Консультации экспертов",
-    description: "Подскажем по кормлению, содержанию, аквариумистике и выбору подходящих товаров.",
-    Icon: ExpertsIcon,
-  },
-  {
-    title: "Широкий ассортимент",
-    description: "Собрали товары для рыбок, кошек, собак, птиц, рептилий и мелких домашних животных.",
+    title: "Большой ассортимент",
+    description:
+      "Товары для собак, кошек, грызунов, птиц, рептилий и рыбок — всё необходимое в одном магазине.",
     Icon: AssortmentIcon,
   },
   {
-    title: "Выгодные цены",
-    description: "Подбираем практичные решения на каждый день без переплаты за лишнее.",
+    title: "Аквариумы и оборудование",
+    description:
+      "В наличии аквариумы, грунт, растения, фильтры, нагреватели, освещение и другие товары для аквариумистики.",
+    Icon: FishIcon,
+  },
+  {
+    title: "Корма для животных",
+    description:
+      "Широкий выбор кормов для разных видов животных, пород и возрастов — для ежедневного рациона и заботы о здоровье.",
     Icon: PriceIcon,
   },
   {
-    title: "Опыт и доверие клиентов",
-    description: "Помогаем владельцам питомцев находить надежные товары и удобные решения для ухода.",
+    title: "Профессионалы своего дела",
+    description:
+      "Помогаем с выбором товаров и подсказываем по уходу, кормлению и содержанию питомцев.",
+    Icon: ExpertsIcon,
+  },
+  {
+    title: "Доступные цены",
+    description:
+      "Поддерживаем приятные цены и стараемся предлагать действительно выгодные решения.",
+    Icon: DeliveryIcon,
+  },
+  {
+    title: "11 лет опыта",
+    description:
+      "С 2015 года помогаем владельцам питомцев находить подходящие товары для комфортной и здоровой жизни животных.",
     Icon: ExperienceIcon,
   },
 ];
@@ -243,13 +242,18 @@ export default function HomePage() {
     <main className="bg-white pb-20 md:pb-24">
       <section className="px-6 pb-10 pt-10 md:px-8 md:pb-14 md:pt-14">
         <div className="mx-auto grid max-w-[1240px] gap-8 overflow-hidden rounded-[32px] border border-[#B8DEF2] bg-gradient-to-br from-[#EEF8FD] via-[#E1F2FB] to-[#D3EAF7] px-7 py-8 shadow-[0_10px_30px_rgba(36,73,124,0.06)] md:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] md:px-10 md:py-11">
-          <div className="max-w-[620px]">
+          <div className="max-w-[640px]">
             <h1 className="text-4xl font-semibold leading-tight text-[#234579] md:text-[46px]">
               Всё для комфортной жизни ваших питомцев
             </h1>
-            <p className="mt-5 max-w-[560px] text-base leading-7 text-[#68758A] md:text-lg">
-              Зоомагазин и аквариумистика с понятным каталогом, полезными товарами и спокойным
-              сервисом для ежедневного ухода за любимцами.
+
+            <p className="mt-5 max-w-[580px] text-base leading-7 text-[#68758A] md:text-lg">
+              Зоомагазин «Атлантида» уже 11 лет помогает подбирать корма, аквариумы, оборудование,
+              аксессуары и товары для ухода.
+            </p>
+
+            <p className="mt-4 max-w-[580px] text-base leading-7 text-[#68758A]">
+              При покупке аквариума от 10 000 ₽ действует бесплатная доставка.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -275,7 +279,7 @@ export default function HomePage() {
               </div>
               <h2 className="text-lg font-semibold leading-snug text-[#394452]">Аквариумистика</h2>
               <p className="mt-2 text-sm leading-6 text-[#68758A]">
-                Всё для запуска и ухода за аквариумом: корма, аксессуары и оборудование.
+                Аквариумы, оборудование, грунт, растения и всё необходимое для запуска и ухода.
               </p>
             </article>
 
@@ -284,10 +288,10 @@ export default function HomePage() {
                 <CatIcon className="h-7 w-7" />
               </div>
               <h2 className="text-lg font-semibold leading-snug text-[#394452]">
-                Товары на каждый день
+                Товары для всех ваших любимцев
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#68758A]">
-                От кормов и игрушек до средств ухода, которые удобно выбрать в одном месте.
+                Корма, лакомства, наполнители, клетки, миски, поводки, игрушки и сопутствующие товары.
               </p>
             </article>
 
@@ -297,9 +301,8 @@ export default function HomePage() {
                   <h2 className="text-lg font-semibold leading-snug text-[#394452]">
                     Поможем подобрать нужное
                   </h2>
-                  <p className="mt-2 max-w-[420px] text-sm leading-6 text-[#68758A]">
-                    Если не уверены в выборе, можно начать с каталога или сразу связаться с нами
-                    для консультации.
+                  <p className="mt-2 max-w-[440px] text-sm leading-6 text-[#68758A]">
+                    Подскажем по рациону, уходу за питомцем и оснащению аквариума.
                   </p>
                 </div>
                 <Link
@@ -325,7 +328,9 @@ export default function HomePage() {
             </p>
           </div>
 
-          {isLoading ? <p className="text-center text-base text-[#6B778B]">Загрузка категорий...</p> : null}
+          {isLoading ? (
+            <p className="text-center text-base text-[#6B778B]">Загрузка категорий...</p>
+          ) : null}
           {error ? <p className="text-center text-base text-[#8E4C4C]">{error}</p> : null}
 
           {!isLoading && !error ? (
@@ -346,15 +351,20 @@ export default function HomePage() {
                   >
                     <article className="group flex h-full min-h-[220px] flex-col items-center rounded-[24px] border border-[#BCE1F1] bg-[#FDFEFE] px-6 py-7 text-center transition-all duration-300 hover:bg-white hover:shadow-sm">
                       <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#CBEAF6] text-[#2F84BF] transition-colors duration-300 group-hover:text-[#1E6FA8]">
-                        {Icon ? <Icon className="h-8 w-8 transition-transform duration-300 group-hover:scale-110" /> : null}
+                        {Icon ? (
+                          <Icon className="h-8 w-8 transition-transform duration-300 group-hover:scale-110" />
+                        ) : null}
                       </div>
                       <h3 className="mt-5 text-xl font-semibold leading-snug text-[#394452]">
                         {category.name}
                       </h3>
                       <p className="mt-3 text-sm leading-6 text-[#68758A]">
-                        {presentation?.shortDescription ?? getCategoryDescription(category.description)}
+                        {presentation?.shortDescription ??
+                          getCategoryDescription(category.description)}
                       </p>
-                      <span className="mt-5 text-sm font-medium text-[#4BADE8]">Смотреть товары →</span>
+                      <span className="mt-5 text-sm font-medium text-[#4BADE8]">
+                        Смотреть товары →
+                      </span>
                     </article>
                   </Link>
                 );
@@ -371,7 +381,8 @@ export default function HomePage() {
               Почему выбирают нас
             </h2>
             <p className="mx-auto mt-3 max-w-[660px] text-base leading-7 text-[#6B778B]">
-              Стараемся сделать покупки для питомцев удобными, понятными и действительно полезными.
+              Предлагаем большой выбор зоотоваров и товаров для аквариумистики, которые помогают
+              сделать жизнь питомцев комфортнее.
             </p>
           </div>
 
@@ -379,21 +390,22 @@ export default function HomePage() {
             {BENEFITS.map(({ title, description, Icon }) => (
               <article
                 key={title}
-                className="rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-6 py-7"
+                className="flex h-full flex-col rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-6 py-5"
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4297D1] text-white shadow-[0_8px_16px_rgba(47,132,191,0.2)]">
                   <Icon className="h-6 w-6" />
                 </div>
-                <h3 className="mt-6 text-xl font-semibold leading-snug text-[#394452] md:text-2xl">
-                  {title}
-                </h3>
-                <p className="mt-3 text-base leading-7 text-[#6B778B]">{description}</p>
+                <div className="mt-5 min-h-[40px]">
+                  <h3 className="text-lg font-semibold leading-snug text-[#394452] md:text-[22px]">
+                    {title}
+                  </h3>
+                </div>
+                <p className="mt-2 text-base leading-7 text-[#6B778B]">{description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
-
     </main>
   );
 }
