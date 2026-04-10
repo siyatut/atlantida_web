@@ -80,7 +80,7 @@ export default function Footer() {
   return (
     <footer className="mt-16 bg-[#0E3A69] text-white" aria-label="Подвал сайта">
       <div className="mx-auto w-full max-w-[1240px] px-6 py-10 md:px-8 md:py-11">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-4 xl:gap-8">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 xl:grid-cols-4 xl:gap-8 md:-ml-8">
           <div className="max-w-[280px]">
             <h2 className="text-[22px] font-semibold leading-tight text-white">Атлантида</h2>
             <p className="mt-3 text-sm leading-6 text-white/68">
@@ -158,7 +158,7 @@ export default function Footer() {
           </address>
         </div>
 
-        <div className="mt-8 border-t border-white/14 pt-4">
+        <div className="mt-8 border-t border-white/14 pt-4 md:-ml-8">
           <p className="text-center text-sm leading-6 text-white/58">
             © 2026 Атлантида. Все права защищены.
           </p>
