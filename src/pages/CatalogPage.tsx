@@ -131,7 +131,7 @@ function CatalogPage() {
   }, []);
 
   return (
-    <main className="px-6 py-12 md:px-8 md:py-16">
+    <main className="px-6 py-12 pb-20 md:px-8 md:py-16 md:pb-24">
       <div className="mx-auto max-w-[1240px]">
         <h1 className="mb-3 text-3xl font-semibold leading-snug text-[#234579]">Каталог товаров</h1>
         <p className="mb-10 text-base leading-snug text-[#6B778B]">
