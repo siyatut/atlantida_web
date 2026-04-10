@@ -1,79 +1,12 @@
 import type { ComponentType, SVGProps } from "react";
-import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import BirdIcon from "../assets/icons_category/bird.svg?react";
 import CatIcon from "../assets/icons_category/cat.svg?react";
-import DogIcon from "../assets/icons_category/dog.svg?react";
 import FishIcon from "../assets/icons_category/fish.svg?react";
-import MouseIcon from "../assets/icons_category/mouse.svg?react";
-import ReptileIcon from "../assets/icons_category/reptile.svg?react";
-import { getCatalogCategories } from "../services/catalog.service";
-import type { CatalogCategory } from "../types/catalog";
-
-type CategoryIcon = ComponentType<SVGProps<SVGSVGElement>>;
-
-type CategoryPresentation = {
-  description: string;
-  shortDescription: string;
-  Icon: CategoryIcon;
-};
 
 type Benefit = {
   title: string;
   description: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
-};
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim() !== "") {
-    return error.message;
-  }
-
-  return "Не удалось загрузить категории.";
-}
-
-function getCategoryDescription(description: string | null): string {
-  if (!description) {
-    return "Подберём всё необходимое для ухода, кормления и комфортной жизни питомца.";
-  }
-
-  const plainText = description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return plainText !== "" ? plainText : "Подберём всё необходимое для ухода и заботы.";
-}
-
-const CATEGORY_PRESENTATION_BY_SLUG: Record<string, CategoryPresentation> = {
-  rybki: {
-    description: "Корма, оборудование и аксессуары для аквариумов и ухода.",
-    shortDescription: "Рыбки, аквариумы и всё для них",
-    Icon: FishIcon,
-  },
-  gryzuny: {
-    description: "Корма, наполнители, клетки и всё для ежедневного ухода за грызунами.",
-    shortDescription: "Хомяки, крысы, морские свинки",
-    Icon: MouseIcon,
-  },
-  koshki: {
-    description: "Корма, игрушки, наполнители и полезные аксессуары для комфортной жизни кошек.",
-    shortDescription: "Всё необходимое для котов",
-    Icon: CatIcon,
-  },
-  sobaki: {
-    description:
-      "Товары для прогулок, кормления, ухода и активной жизни вашего четвероногого друга.",
-    shortDescription: "Товары для четвероногих друзей",
-    Icon: DogIcon,
-  },
-  pticzy: {
-    description:
-      "Клетки, корма и аксессуары для птиц, чтобы ежедневный уход не доставлял хлопот.",
-    shortDescription: "Корма, клетки и аксессуары",
-    Icon: BirdIcon,
-  },
-  reptilii: {
-    description: "Террариумы, освещение, корма и аксессуары для содержания рептилий.",
-    shortDescription: "Террариумы, лампы и уход",
-    Icon: ReptileIcon,
-  },
 };
 
 function DeliveryIcon(props: SVGProps<SVGSVGElement>) {
@@ -185,59 +118,6 @@ const BENEFITS: Benefit[] = [
 ];
 
 export default function HomePage() {
-  const [categories, setCategories] = useState<CatalogCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadCategories() {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = await getCatalogCategories();
-
-        if (isMounted) {
-          setCategories(data);
-        }
-      } catch (loadError) {
-        console.error("[HomePage] Failed to load categories", loadError);
-
-        if (isMounted) {
-          setError(getErrorMessage(loadError));
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    void loadCategories();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const rootCategories = useMemo(() => {
-    return categories
-      .filter((category) => category.parent === 0)
-      .sort((firstCategory, secondCategory) => {
-        const firstCount = firstCategory.count ?? 0;
-        const secondCount = secondCategory.count ?? 0;
-
-        if (secondCount !== firstCount) {
-          return secondCount - firstCount;
-        }
-
-        return firstCategory.name.localeCompare(secondCategory.name, "ru");
-      })
-      .slice(0, 6);
-  }, [categories]);
-
   return (
     <main className="bg-white pb-20 md:pb-24">
       <section className="px-6 pb-10 pt-10 md:px-8 md:pb-14 md:pt-14">
@@ -264,7 +144,7 @@ export default function HomePage() {
                 Перейти в каталог
               </Link>
               <Link
-                to="/contact"
+                to="/#contacts"
                 className="inline-flex items-center justify-center rounded-2xl border border-[#B7DBEE] bg-white/80 px-6 py-3.5 text-sm font-medium text-[#2C5C8E] transition-colors duration-200 hover:bg-white"
               >
                 Связаться с нами
@@ -306,7 +186,7 @@ export default function HomePage() {
                   </p>
                 </div>
                 <Link
-                  to="/about"
+                  to="/#about"
                   className="inline-flex items-center text-sm font-medium text-[#4BADE8] transition-colors duration-200 hover:text-[#2F84BF]"
                 >
                   Подробнее о магазине →
@@ -317,60 +197,51 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[#E7F5FB] px-6 py-12 md:px-8 md:py-16">
-        <div className="mx-auto max-w-[1120px]">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-semibold leading-snug text-[#234579]">
-              Категории товаров
-            </h2>
-            <p className="mx-auto mt-3 max-w-[620px] text-base leading-7 text-[#6B778B]">
-              Выберите нужное направление и перейдите к актуальным категориям магазина.
+      <section id="about" className="bg-white px-6 py-12 scroll-mt-28 md:px-8 md:py-16">
+        <div className="mx-auto grid max-w-[1240px] gap-12 md:grid-cols-[minmax(0,520px)_minmax(320px,1fr)] xl:gap-14">
+          <div className="max-w-[520px]">
+            <h2 className="text-3xl font-semibold leading-snug text-[#234579]">О магазине</h2>
+            <p className="mt-4 max-w-[520px] text-base leading-7 text-[#6B778B]">
+              «Атлантида» — магазин для тех, кто заботится о питомцах каждый день. Мы работаем с
+              2015 года и помогаем подбирать товары для рыбок, кошек, собак, птиц, грызунов и
+              рептилий.
+            </p>
+            <p className="mt-4 max-w-[520px] text-base leading-7 text-[#6B778B]">
+              У нас можно найти как повседневные средства для ухода, так и всё необходимое для
+              аквариумистики: аквариумы, оборудование, декор, растения и расходные материалы.
+            </p>
+            <p className="mt-4 max-w-[520px] text-base leading-7 text-[#6B778B]">
+              Стараемся, чтобы выбор был актуальным, а консультации действительно полезными и понятными.
             </p>
           </div>
 
-          {isLoading ? (
-            <p className="text-center text-base text-[#6B778B]">Загрузка категорий...</p>
-          ) : null}
-          {error ? <p className="text-center text-base text-[#8E4C4C]">{error}</p> : null}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <article className="flex flex-col justify-start gap-3 rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-4">
+              <h3 className="text-xl font-semibold leading-snug text-[#394452]">Опыт работы</h3>
+              <p className="text-sm leading-6 text-[#68758A]">
+                Помогаем владельцам животных и любителям аквариумистики с 2015 года.
+              </p>
+            </article>
 
-          {!isLoading && !error ? (
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {rootCategories.map((category) => {
-                const presentation = CATEGORY_PRESENTATION_BY_SLUG[category.slug];
-                const Icon = presentation?.Icon;
+            <article className="flex flex-col justify-start gap-3 rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-4">
+              <h3 className="text-xl font-semibold leading-snug text-[#394452]">
+                Бесплатная доставка
+              </h3>
+              <p className="text-sm leading-6 text-[#68758A]">
+                При покупке аквариума от 10 000 ₽ бесплатно доставим до вашего дома.
+              </p>
+            </article>
 
-                return (
-                  <Link
-                    key={category.id}
-                    to={`/catalog/category/${category.id}`}
-                    state={{
-                      parentCategoryId: null,
-                      parentCategoryName: "Каталог",
-                      currentCategoryName: category.name,
-                    }}
-                  >
-                    <article className="group flex h-full min-h-[220px] flex-col items-center rounded-[24px] border border-[#BCE1F1] bg-[#FDFEFE] px-6 py-7 text-center transition-all duration-300 hover:bg-white hover:shadow-sm">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#CBEAF6] text-[#2F84BF] transition-colors duration-300 group-hover:text-[#1E6FA8]">
-                        {Icon ? (
-                          <Icon className="h-8 w-8 transition-transform duration-300 group-hover:scale-110" />
-                        ) : null}
-                      </div>
-                      <h3 className="mt-5 text-xl font-semibold leading-snug text-[#394452]">
-                        {category.name}
-                      </h3>
-                      <p className="mt-3 text-sm leading-6 text-[#68758A]">
-                        {presentation?.shortDescription ??
-                          getCategoryDescription(category.description)}
-                      </p>
-                      <span className="mt-5 text-sm font-medium text-[#4BADE8]">
-                        Смотреть товары →
-                      </span>
-                    </article>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : null}
+            <article className="flex flex-col justify-start gap-3 rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-4 sm:col-span-2">
+              <h3 className="text-xl font-semibold leading-snug text-[#394452]">
+                Подскажем и поможем выбрать
+              </h3>
+              <p className="text-sm leading-6 text-[#68758A]">
+                Если не уверены в выборе корма, аксессуаров или оборудования, можно обратиться за
+                консультацией и подобрать подходящее решение.
+              </p>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -390,19 +261,134 @@ export default function HomePage() {
             {BENEFITS.map(({ title, description, Icon }) => (
               <article
                 key={title}
-                className="flex h-full flex-col rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-6 py-5"
+                className="flex h-full flex-col rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-6 py-4"
               >
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4297D1] text-white shadow-[0_8px_16px_rgba(47,132,191,0.2)]">
                   <Icon className="h-6 w-6" />
                 </div>
-                <div className="mt-5 min-h-[40px]">
+                <div className="mt-4 min-h-[32px]">
                   <h3 className="text-lg font-semibold leading-snug text-[#394452] md:text-[22px]">
                     {title}
                   </h3>
                 </div>
-                <p className="mt-2 text-base leading-7 text-[#6B778B]">{description}</p>
+                <p className="mt-1 text-base leading-7 text-[#6B778B]">{description}</p>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="contacts" className="bg-white px-6 py-12 scroll-mt-28 md:px-8 md:py-16">
+        <div className="mx-auto max-w-[1240px]">
+          <div className="mb-10 text-center">
+            <h2 className="text-3xl font-semibold leading-snug text-[#234579]">Контакты</h2>
+            <p className="mx-auto mt-3 max-w-[660px] text-base leading-7 text-[#6B778B]">
+              Если нужна консультация по товарам, аквариумам или уходу за питомцами, можно
+              написать нам через форму или связаться напрямую.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_380px]">
+            <section className="rounded-[28px] border border-[#BCE1F1] bg-[#F6FBFE] p-6 md:p-8">
+              <h3 className="text-2xl font-semibold leading-snug text-[#394452]">Напишите нам</h3>
+              <p className="mt-3 max-w-[560px] text-base leading-7 text-[#6B778B]">
+                Оставьте сообщение, и мы свяжемся с вами по вопросам ассортимента, аквариумистики,
+                доставки и подбора товаров.
+              </p>
+
+              <form className="mt-8 grid gap-4 md:grid-cols-2">
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium text-[#5B6880]">Имя</span>
+                  <input
+                    type="text"
+                    placeholder="Как к вам обращаться"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                  />
+                </label>
+                <label className="flex flex-col gap-2">
+                  <span className="text-sm font-medium text-[#5B6880]">Телефон</span>
+                  <input
+                    type="tel"
+                    placeholder="+7 (___) ___-__-__"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                  />
+                </label>
+                <label className="flex flex-col gap-2 md:col-span-2">
+                  <span className="text-sm font-medium text-[#5B6880]">E-mail</span>
+                  <input
+                    type="email"
+                    placeholder="name@example.com"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                  />
+                </label>
+                <label className="flex flex-col gap-2 md:col-span-2">
+                  <span className="text-sm font-medium text-[#5B6880]">Сообщение</span>
+                  <textarea
+                    placeholder="Расскажите, что вы ищете или по какому вопросу хотите получить консультацию"
+                    rows={5}
+                    className="resize-none rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm leading-6 text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                  />
+                </label>
+                <div className="md:col-span-2">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#256EAC]"
+                  >
+                    Отправить сообщение
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <aside className="rounded-[28px] border border-[#BCE1F1] bg-[#EAF7FD] p-6 md:p-8">
+              <h3 className="text-2xl font-semibold leading-snug text-[#394452]">Как связаться</h3>
+              <ul className="mt-8 space-y-6">
+                <li>
+                  <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
+                    Телефон
+                  </p>
+                  <a
+                    href="tel:+79625046096"
+                    className="mt-2 inline-block text-lg font-medium text-[#2C5C8E] transition-colors hover:text-[#2F84BF]"
+                  >
+                    +7 (962) 504-60-96
+                  </a>
+                </li>
+                <li>
+                  <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
+                    E-mail
+                  </p>
+                  <a
+                    href="mailto:gagin645@yandex.ru"
+                    className="mt-2 inline-block text-lg font-medium text-[#2C5C8E] transition-colors hover:text-[#2F84BF]"
+                  >
+                    gagin645@yandex.ru
+                  </a>
+                </li>
+                <li>
+                  <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
+                    Адрес
+                  </p>
+                  <p className="mt-2 text-base leading-7 text-[#6B778B]">
+                    Нижний Новгород, ул. Коминтерна, 117
+                    <br />
+                    Универмаг "Сормовские Зори"
+                    <br />
+                    1 этаж, левое крыло
+                  </p>
+                </li>
+                <li>
+                  <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
+                    Режим работы
+                  </p>
+                  <p className="mt-2 text-base leading-7 text-[#6B778B]">
+                    Ежедневно
+                    <br />
+                    с 10:00 до 21:00
+                  </p>
+                </li>
+              </ul>
+            </aside>
           </div>
         </div>
       </section>

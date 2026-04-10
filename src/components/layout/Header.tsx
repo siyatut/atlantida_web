@@ -1,11 +1,14 @@
-import { NavLink, Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import webLogo from "../../assets/web_logo.png";
 
 export default function Header() {
-  const linkClassName = ({ isActive }: { isActive: boolean }) =>
-    `text-base font-medium leading-none transition-colors hover:text-[#4BADE8] ${
+  const location = useLocation();
+
+  function getLinkClassName(isActive: boolean): string {
+    return `text-base font-medium leading-none transition-colors hover:text-[#4BADE8] ${
       isActive ? "text-[#4BADE8]" : "text-[#6B7487]"
     }`;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-[#DBE1E8] bg-white">
@@ -28,18 +31,24 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          <NavLink to="/" className={linkClassName} end>
+          <Link to="/" className={getLinkClassName(location.pathname === "/" && location.hash === "")}>
             Главная
-          </NavLink>
-          <NavLink to="/catalog" className={linkClassName}>
+          </Link>
+          <Link to="/catalog" className={getLinkClassName(location.pathname.startsWith("/catalog"))}>
             Каталог
-          </NavLink>
-          <NavLink to="/about" className={linkClassName}>
+          </Link>
+          <Link to="/#about" className={getLinkClassName(location.pathname === "/" && location.hash === "#about")}>
             О нас
-          </NavLink>
-          <NavLink to="/contact" className={linkClassName}>
+          </Link>
+          <Link to="/reviews" className={getLinkClassName(location.pathname === "/reviews")}>
+            Отзывы
+          </Link>
+          <Link
+            to="/#contacts"
+            className={getLinkClassName(location.pathname === "/" && location.hash === "#contacts")}
+          >
             Контакты
-          </NavLink>
+          </Link>
         </nav>
 
         <div className="hidden items-center gap-4 text-[#2F84BF] md:flex">

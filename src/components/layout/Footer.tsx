@@ -9,10 +9,10 @@ type FooterNavItem = {
 };
 
 const COMPANY_LINKS: FooterNavItem[] = [
-  { label: "О нас", to: "/about" },
-  { label: "Отзывы" },
-  { label: "Контакты", to: "/contact" },
-  { label: "Избранное" },
+  { label: "О нас", to: "/#about" },
+  { label: "Отзывы", to: "/reviews" },
+  { label: "Контакты", to: "/#contacts" },
+  { label: "Избранное", to: "/favorites" },
 ];
 
 function FooterLink({ item }: { item: FooterNavItem }) {
