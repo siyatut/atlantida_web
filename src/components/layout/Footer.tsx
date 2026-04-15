@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getCatalogCategories } from "../../services/catalog.service";
 import type { CatalogCategory } from "../../types/catalog";
+import HomeHashLink from "../navigation/HomeHashLink";
 
 type FooterNavItem = {
   label: string;
@@ -18,6 +19,17 @@ const COMPANY_LINKS: FooterNavItem[] = [
 function FooterLink({ item }: { item: FooterNavItem }) {
   if (!item.to) {
     return <span className="text-sm leading-6 text-white/55">{item.label}</span>;
+  }
+
+  if (item.to.startsWith("/#")) {
+    return (
+      <HomeHashLink
+        hash={item.to.slice(1)}
+        className="text-sm leading-6 text-white/72 transition-colors duration-200 hover:text-[#8BD0F4]"
+      >
+        {item.label}
+      </HomeHashLink>
+    );
   }
 
   return (

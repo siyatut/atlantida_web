@@ -8,6 +8,7 @@ import CategoryPage from "./pages/CategoryPage";
 import ProductDetailsPage from "./pages/ProductDetailsPage";
 import ReviewsPage from "./pages/ReviewsPage";
 import FavoritesPage from "./pages/FavoritesPage";
+import { isHomeHashLink, scrollToHashTarget } from "./utils/hash-scroll";
 
 function App() {
   const location = useLocation();
@@ -19,21 +20,17 @@ function App() {
       return;
     }
 
-    const targetId = location.hash.slice(1);
+    if (!isHomeHashLink(location.pathname, location.hash)) {
+      return;
+    }
 
-    window.requestAnimationFrame(() => {
-      const target = document.getElementById(targetId);
-
-      if (!target) {
-        return;
-      }
-
-      const targetTop = target.getBoundingClientRect().top + window.scrollY - 104;
-      window.scrollTo({
-        top: Math.max(targetTop, 0),
-        behavior: "smooth",
-      });
+    const frameId = window.requestAnimationFrame(() => {
+      scrollToHashTarget(location.hash, { behavior: "smooth" });
     });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [location.pathname, location.hash]);
 
   return (

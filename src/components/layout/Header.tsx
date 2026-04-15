@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import webLogo from "../../assets/web_logo.png";
+import HomeHashLink from "../navigation/HomeHashLink";
 
 export default function Header() {
   const location = useLocation();
@@ -11,7 +12,7 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[#DBE1E8] bg-white">
+    <header data-site-header className="sticky top-0 z-50 border-b border-[#DBE1E8] bg-white">
       <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between px-6 py-3 md:px-8">
         <Link to="/" className="flex w-[320px] items-center gap-3">
           <img
@@ -37,18 +38,21 @@ export default function Header() {
           <Link to="/catalog" className={getLinkClassName(location.pathname.startsWith("/catalog"))}>
             Каталог
           </Link>
-          <Link to="/#about" className={getLinkClassName(location.pathname === "/" && location.hash === "#about")}>
+          <HomeHashLink
+            hash="#about"
+            className={getLinkClassName(location.pathname === "/" && location.hash === "#about")}
+          >
             О нас
-          </Link>
+          </HomeHashLink>
           <Link to="/reviews" className={getLinkClassName(location.pathname === "/reviews")}>
             Отзывы
           </Link>
-          <Link
-            to="/#contacts"
+          <HomeHashLink
+            hash="#contacts"
             className={getLinkClassName(location.pathname === "/" && location.hash === "#contacts")}
           >
             Контакты
-          </Link>
+          </HomeHashLink>
         </nav>
 
         <div className="hidden items-center gap-4 text-[#2F84BF] md:flex">

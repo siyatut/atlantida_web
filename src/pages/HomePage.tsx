@@ -2,21 +2,13 @@ import type { ComponentType, SVGProps } from "react";
 import { Link } from "react-router-dom";
 import CatIcon from "../assets/icons_category/cat.svg?react";
 import FishIcon from "../assets/icons_category/fish.svg?react";
+import HomeHashLink from "../components/navigation/HomeHashLink";
 
-type Benefit = {
+type AboutHighlight = {
   title: string;
   description: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
 };
-
-function DeliveryIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 7.8V12l2.8 2.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function ExpertsIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -51,20 +43,6 @@ function AssortmentIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function PriceIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
-      <circle cx="12" cy="12" r="8" />
-      <path
-        d="M14.8 9.2c-.5-.8-1.5-1.2-2.8-1.2-1.7 0-2.8.8-2.8 2 0 1 .7 1.6 2.3 2l1 .3c1.6.4 2.4 1.1 2.4 2.2 0 1.4-1.2 2.3-3.1 2.3-1.4 0-2.5-.4-3.2-1.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path d="M12 7v10" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function ExperienceIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
@@ -78,49 +56,56 @@ function ExperienceIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-const BENEFITS: Benefit[] = [
+function DeliveryIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path
+        d="M3.5 7.5A1.5 1.5 0 0 1 5 6h9.5A1.5 1.5 0 0 1 16 7.5v7A1.5 1.5 0 0 1 14.5 16H5A1.5 1.5 0 0 1 3.5 14.5v-7Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 9.5h2.3a1.5 1.5 0 0 1 1.2.6l1.4 1.9c.2.3.3.6.3 1v1.5A1.5 1.5 0 0 1 19.7 16H16V9.5Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="8" cy="16.5" r="1.5" />
+      <circle cx="18" cy="16.5" r="1.5" />
+    </svg>
+  );
+}
+
+const ABOUT_HIGHLIGHTS: AboutHighlight[] = [
+  {
+    title: "12 лет опыта",
+    description:
+      "С 2014 года помогаем владельцам питомцев подбирать товары для ежедневного ухода и комфортной жизни животных.",
+    Icon: ExperienceIcon,
+  },
   {
     title: "Большой ассортимент",
     description:
-      "Товары для собак, кошек, грызунов, птиц, рептилий и рыбок — всё необходимое в одном магазине.",
+      "В одном месте собраны корма, аксессуары, товары для ухода и всё необходимое для аквариумистики.",
     Icon: AssortmentIcon,
   },
   {
-    title: "Аквариумы и оборудование",
+    title: "Бесплатная доставка",
     description:
-      "В наличии аквариумы, грунт, растения, фильтры, нагреватели, освещение и другие товары для аквариумистики.",
-    Icon: FishIcon,
-  },
-  {
-    title: "Корма для животных",
-    description:
-      "Широкий выбор кормов для разных видов животных, пород и возрастов — для ежедневного рациона и заботы о здоровье.",
-    Icon: PriceIcon,
-  },
-  {
-    title: "Профессионалы своего дела",
-    description:
-      "Помогаем с выбором товаров и подсказываем по уходу, кормлению и содержанию питомцев.",
-    Icon: ExpertsIcon,
-  },
-  {
-    title: "Доступные цены",
-    description:
-      "Поддерживаем приятные цены и стараемся предлагать действительно выгодные решения.",
+      "При покупке аквариума от 10 000 ₽ бесплатно доставим заказ до вашего дома.",
     Icon: DeliveryIcon,
   },
   {
-    title: "11 лет опыта",
+    title: "Консультации по выбору",
     description:
-      "С 2015 года помогаем владельцам питомцев находить подходящие товары для комфортной и здоровой жизни животных.",
-    Icon: ExperienceIcon,
+      "Подскажем по рациону, уходу за питомцем и оснащению аквариума, если нужно подобрать подходящее решение.",
+    Icon: ExpertsIcon,
   },
 ];
 
 export default function HomePage() {
   return (
     <main className="bg-white pb-20 md:pb-24">
-      <section className="px-6 pb-10 pt-10 md:px-8 md:pb-14 md:pt-14">
+      <section className="px-6 pb-12 pt-14 md:px-8 md:pb-16 md:pt-[72px]">
         <div className="mx-auto grid max-w-[1240px] gap-8 overflow-hidden rounded-[32px] border border-[#B8DEF2] bg-gradient-to-br from-[#EEF8FD] via-[#E1F2FB] to-[#D3EAF7] px-7 py-8 shadow-[0_10px_30px_rgba(36,73,124,0.06)] md:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] md:px-10 md:py-11">
           <div className="max-w-[640px]">
             <h1 className="text-4xl font-semibold leading-tight text-[#234579] md:text-[46px]">
@@ -128,7 +113,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-5 max-w-[580px] text-base leading-7 text-[#68758A] md:text-lg">
-              Зоомагазин «Атлантида» уже 11 лет помогает подбирать корма, аквариумы, оборудование,
+              Зоомагазин «Атлантида» уже 12 лет помогает подбирать корма, аквариумы, оборудование,
               аксессуары и товары для ухода.
             </p>
 
@@ -143,12 +128,12 @@ export default function HomePage() {
               >
                 Перейти в каталог
               </Link>
-              <Link
-                to="/#contacts"
+              <HomeHashLink
+                hash="#contacts"
                 className="inline-flex items-center justify-center rounded-2xl border border-[#B7DBEE] bg-white/80 px-6 py-3.5 text-sm font-medium text-[#2C5C8E] transition-colors duration-200 hover:bg-white"
               >
                 Связаться с нами
-              </Link>
+              </HomeHashLink>
             </div>
           </div>
 
@@ -185,148 +170,111 @@ export default function HomePage() {
                     Подскажем по рациону, уходу за питомцем и оснащению аквариума.
                   </p>
                 </div>
-                <Link
-                  to="/#about"
+                <HomeHashLink
+                  hash="#about"
                   className="inline-flex items-center text-sm font-medium text-[#4BADE8] transition-colors duration-200 hover:text-[#2F84BF]"
                 >
                   Подробнее о магазине →
-                </Link>
+                </HomeHashLink>
               </div>
             </article>
           </div>
         </div>
       </section>
 
-      <section id="about" className="bg-white px-6 py-12 scroll-mt-28 md:px-8 md:py-16">
-        <div className="mx-auto grid max-w-[1240px] gap-12 md:grid-cols-[minmax(0,520px)_minmax(320px,1fr)] xl:gap-14">
-          <div className="max-w-[520px]">
+      <section id="about" className="bg-white px-6 py-14 md:px-8 md:py-[72px]">
+        <div className="mx-auto grid max-w-[1240px] gap-10 md:grid-cols-[minmax(0,540px)_minmax(320px,1fr)] xl:gap-14">
+          <div className="flex max-w-[520px] flex-col items-start">
             <h2 className="text-3xl font-semibold leading-snug text-[#234579]">О магазине</h2>
-            <p className="mt-4 max-w-[520px] text-base leading-7 text-[#6B778B]">
+            <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
               «Атлантида» — магазин для тех, кто заботится о питомцах каждый день. Мы работаем с
-              2015 года и помогаем подбирать товары для рыбок, кошек, собак, птиц, грызунов и
+              2014 года и помогаем подбирать товары для рыбок, кошек, собак, птиц, грызунов и
               рептилий.
             </p>
-            <p className="mt-4 max-w-[520px] text-base leading-7 text-[#6B778B]">
-              У нас можно найти как повседневные средства для ухода, так и всё необходимое для
-              аквариумистики: аквариумы, оборудование, декор, растения и расходные материалы.
+            <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
+              У нас можно найти как повседневные товары для ухода и кормления, так и всё
+              необходимое для аквариумистики: оборудование, декор, рыбки, растения и
+              расходные материалы.
             </p>
-            <p className="mt-4 max-w-[520px] text-base leading-7 text-[#6B778B]">
-              Стараемся, чтобы выбор был актуальным, а консультации действительно полезными и понятными.
+            <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
+              Нам важно, чтобы выбор был понятным, а консультации действительно помогали.
             </p>
+            <p className="mt-8 w-full border-l-4 border-[#8CCDEA] bg-[#F6FBFE] px-4 py-3 text-sm leading-6 text-[#2C5C8E]">
+              Собрали всё самое важное, чтобы вам было легко и спокойно заботиться о питомцах.
+            </p>
+            <Link
+              to="/reviews"
+              className="mt-5 inline-flex items-center text-sm font-medium text-[#4BADE8] transition-colors duration-200 hover:text-[#2F84BF]"
+            >
+              Смотреть отзывы →
+            </Link>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <article className="flex flex-col justify-start gap-3 rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-4">
-              <h3 className="text-xl font-semibold leading-snug text-[#394452]">Опыт работы</h3>
-              <p className="text-sm leading-6 text-[#68758A]">
-                Помогаем владельцам животных и любителям аквариумистики с 2015 года.
-              </p>
-            </article>
-
-            <article className="flex flex-col justify-start gap-3 rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-4">
-              <h3 className="text-xl font-semibold leading-snug text-[#394452]">
-                Бесплатная доставка
-              </h3>
-              <p className="text-sm leading-6 text-[#68758A]">
-                При покупке аквариума от 10 000 ₽ бесплатно доставим до вашего дома.
-              </p>
-            </article>
-
-            <article className="flex flex-col justify-start gap-3 rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-4 sm:col-span-2">
-              <h3 className="text-xl font-semibold leading-snug text-[#394452]">
-                Подскажем и поможем выбрать
-              </h3>
-              <p className="text-sm leading-6 text-[#68758A]">
-                Если не уверены в выборе корма, аксессуаров или оборудования, можно обратиться за
-                консультацией и подобрать подходящее решение.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-white px-6 pb-0 pt-12 md:px-8 md:pt-16">
-        <div className="mx-auto max-w-[1240px]">
-          <div className="mb-10 text-center">
-            <h2 className="text-3xl font-semibold leading-snug text-[#234579]">
-              Почему выбирают нас
-            </h2>
-            <p className="mx-auto mt-3 max-w-[660px] text-base leading-7 text-[#6B778B]">
-              Предлагаем большой выбор зоотоваров и товаров для аквариумистики, которые помогают
-              сделать жизнь питомцев комфортнее.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {BENEFITS.map(({ title, description, Icon }) => (
+            {ABOUT_HIGHLIGHTS.map(({ title, description, Icon }) => (
               <article
                 key={title}
-                className="flex h-full flex-col rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-6 py-4"
+                className="flex h-full flex-col rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-5"
               >
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4297D1] text-white shadow-[0_8px_16px_rgba(47,132,191,0.2)]">
-                  <Icon className="h-6 w-6" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4297D1] text-white shadow-[0_8px_16px_rgba(47,132,191,0.2)]">
+                  <Icon className="h-5 w-5" />
                 </div>
-                <div className="mt-4 min-h-[32px]">
-                  <h3 className="text-lg font-semibold leading-snug text-[#394452] md:text-[22px]">
-                    {title}
-                  </h3>
-                </div>
-                <p className="mt-1 text-base leading-7 text-[#6B778B]">{description}</p>
+                <h3 className="mt-4 text-xl font-semibold leading-snug text-[#394452]">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-[#68758A]">{description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="contacts" className="bg-white px-6 py-12 scroll-mt-28 md:px-8 md:py-16">
+      <section id="contacts" className="bg-white px-6 py-12 md:px-8 md:py-14">
         <div className="mx-auto max-w-[1240px]">
-          <div className="mb-10 text-center">
+          <div className="mb-8 text-center">
             <h2 className="text-3xl font-semibold leading-snug text-[#234579]">Контакты</h2>
             <p className="mx-auto mt-3 max-w-[660px] text-base leading-7 text-[#6B778B]">
-              Если нужна консультация по товарам, аквариумам или уходу за питомцами, можно
-              написать нам через форму или связаться напрямую.
+              Если нужна консультация, напишите нам через форму или свяжитесь напрямую.
             </p>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_380px]">
-            <section className="rounded-[28px] border border-[#BCE1F1] bg-[#F6FBFE] p-6 md:p-8">
+            <section className="rounded-[28px] border border-[#BCE1F1] bg-[#F6FBFE] p-5 md:p-6">
               <h3 className="text-2xl font-semibold leading-snug text-[#394452]">Напишите нам</h3>
               <p className="mt-3 max-w-[560px] text-base leading-7 text-[#6B778B]">
                 Оставьте сообщение, и мы свяжемся с вами по вопросам ассортимента, аквариумистики,
                 доставки и подбора товаров.
               </p>
 
-              <form className="mt-8 grid gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-2">
+              <form className="mt-6 grid gap-3 md:grid-cols-2">
+                <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-[#5B6880]">Имя</span>
                   <input
                     type="text"
                     placeholder="Как к вам обращаться"
-                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
                   />
                 </label>
-                <label className="flex flex-col gap-2">
+                <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-[#5B6880]">Телефон</span>
                   <input
                     type="tel"
                     placeholder="+7 (___) ___-__-__"
-                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
                   />
                 </label>
-                <label className="flex flex-col gap-2 md:col-span-2">
+                <label className="flex flex-col gap-1.5 md:col-span-2">
                   <span className="text-sm font-medium text-[#5B6880]">E-mail</span>
                   <input
                     type="email"
                     placeholder="name@example.com"
-                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
                   />
                 </label>
-                <label className="flex flex-col gap-2 md:col-span-2">
+                <label className="flex flex-col gap-1.5 md:col-span-2">
                   <span className="text-sm font-medium text-[#5B6880]">Сообщение</span>
                   <textarea
                     placeholder="Расскажите, что вы ищете или по какому вопросу хотите получить консультацию"
-                    rows={5}
-                    className="resize-none rounded-2xl border border-[#CBE3F1] bg-white px-4 py-3 text-sm leading-6 text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    rows={4}
+                    className="resize-none rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm leading-6 text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
                   />
                 </label>
                 <div className="md:col-span-2">
@@ -340,9 +288,9 @@ export default function HomePage() {
               </form>
             </section>
 
-            <aside className="rounded-[28px] border border-[#BCE1F1] bg-[#EAF7FD] p-6 md:p-8">
+            <aside className="rounded-[28px] border border-[#BCE1F1] bg-[#EAF7FD] p-5 md:p-6">
               <h3 className="text-2xl font-semibold leading-snug text-[#394452]">Как связаться</h3>
-              <ul className="mt-8 space-y-6">
+              <ul className="mt-6 space-y-5">
                 <li>
                   <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
                     Телефон

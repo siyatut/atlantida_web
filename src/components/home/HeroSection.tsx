@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import HomeHashLink from "../navigation/HomeHashLink";
 
 export default function HeroSection() {
   return (
@@ -20,12 +21,12 @@ export default function HeroSection() {
               Смотреть каталог
             </Link>
 
-            <Link
-              to="/contact"
+            <HomeHashLink
+              hash="#contacts"
               className="bg-white/20 text-white px-8 py-4 rounded-2xl border border-white hover:bg-white/30 transition-all"
             >
               Связаться с нами
-            </Link>
+            </HomeHashLink>
           </div>
         </div>
       </div>
