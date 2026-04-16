@@ -1,4 +1,5 @@
-import type { ComponentType, SVGProps } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ChangeEvent, ComponentType, FormEvent, SVGProps } from "react";
 import { Link } from "react-router-dom";
 import CatIcon from "../assets/icons_category/cat.svg?react";
 import FishIcon from "../assets/icons_category/fish.svg?react";
@@ -9,6 +10,16 @@ type AboutHighlight = {
   description: string;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
 };
+
+type ContactFormValues = {
+  name: string;
+  phone: string;
+  email: string;
+  message: string;
+};
+
+type ContactFormTouched = Record<keyof ContactFormValues, boolean>;
+type ContactFormErrors = Record<keyof ContactFormValues, string>;
 
 function ExpertsIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -102,7 +113,207 @@ const ABOUT_HIGHLIGHTS: AboutHighlight[] = [
   },
 ];
 
+const INITIAL_CONTACT_FORM: ContactFormValues = {
+  name: "",
+  phone: "",
+  email: "",
+  message: "",
+};
+
+const INITIAL_TOUCHED: ContactFormTouched = {
+  name: false,
+  phone: false,
+  email: false,
+  message: false,
+};
+
+function extractPhoneDigits(value: string): string {
+  const digits = value.replace(/\D/g, "");
+
+  if (!digits) {
+    return "";
+  }
+
+  if (digits[0] === "8") {
+    return `7${digits.slice(1, 11)}`;
+  }
+
+  if (digits[0] === "7") {
+    return digits.slice(0, 11);
+  }
+
+  return `7${digits.slice(0, 10)}`;
+}
+
+function formatRussianPhone(value: string): string {
+  const digits = extractPhoneDigits(value);
+
+  if (!digits) {
+    return "";
+  }
+
+  const nationalDigits = digits.slice(1);
+  const areaCode = nationalDigits.slice(0, 3);
+  const firstPart = nationalDigits.slice(3, 6);
+  const secondPart = nationalDigits.slice(6, 8);
+  const thirdPart = nationalDigits.slice(8, 10);
+
+  let formatted = "+7";
+
+  if (areaCode) {
+    formatted += ` (${areaCode}`;
+  }
+
+  if (nationalDigits.length >= 3) {
+    formatted += ")";
+  }
+
+  if (firstPart) {
+    formatted += ` ${firstPart}`;
+  }
+
+  if (secondPart) {
+    formatted += `-${secondPart}`;
+  }
+
+  if (thirdPart) {
+    formatted += `-${thirdPart}`;
+  }
+
+  return formatted;
+}
+
+function isValidRussianPhone(value: string): boolean {
+  return extractPhoneDigits(value).length === 11;
+}
+
+function isValidEmail(value: string): boolean {
+  const email = value.trim();
+
+  if (!email) {
+    return false;
+  }
+
+  const [localPart, domainPart, ...rest] = email.split("@");
+
+  if (!localPart || !domainPart || rest.length > 0) {
+    return false;
+  }
+
+  if (domainPart.startsWith(".") || domainPart.endsWith(".")) {
+    return false;
+  }
+
+  const domainSegments = domainPart.split(".");
+
+  return domainSegments.length >= 2 && domainSegments.every((segment) => segment.length > 0);
+}
+
+function getContactFormErrors(values: ContactFormValues): ContactFormErrors {
+  return {
+    name: values.name.trim() ? "" : "Введите имя",
+    phone: isValidRussianPhone(values.phone) ? "" : "Введите корректный номер телефона",
+    email: isValidEmail(values.email) ? "" : "Введите корректный email",
+    message: values.message.trim() ? "" : "Введите сообщение",
+  };
+}
+
 export default function HomePage() {
+  const formRef = useRef<HTMLFormElement>(null);
+  const [formValues, setFormValues] = useState<ContactFormValues>(INITIAL_CONTACT_FORM);
+  const [touchedFields, setTouchedFields] = useState<ContactFormTouched>(INITIAL_TOUCHED);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
+
+  const formErrors = getContactFormErrors(formValues);
+
+  useEffect(() => {
+    if (!submitSuccess) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSubmitSuccess(false);
+    }, 8000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [submitSuccess]);
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (hasSubmitted || !formRef.current) {
+        return;
+      }
+
+      const target = event.target;
+
+      if (target instanceof Node && !formRef.current.contains(target)) {
+        setTouchedFields(INITIAL_TOUCHED);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [hasSubmitted]);
+
+  function setFieldValue(field: keyof ContactFormValues, value: string) {
+    if (submitSuccess) {
+      setSubmitSuccess(false);
+    }
+
+    setFormValues((currentValues) => ({
+      ...currentValues,
+      [field]: value,
+    }));
+  }
+
+  function handleTextFieldChange(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const { name, value } = event.target;
+    setFieldValue(name as keyof ContactFormValues, value);
+  }
+
+  function handlePhoneChange(event: ChangeEvent<HTMLInputElement>) {
+    setFieldValue("phone", formatRussianPhone(event.target.value));
+  }
+
+  function handleFieldBlur(field: keyof ContactFormValues) {
+    setTouchedFields((currentTouched) => ({
+      ...currentTouched,
+      [field]: true,
+    }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setHasSubmitted(true);
+
+    const nextTouchedFields: ContactFormTouched = {
+      name: true,
+      phone: true,
+      email: true,
+      message: true,
+    };
+    const nextErrors = getContactFormErrors(formValues);
+    const hasErrors = Object.values(nextErrors).some(Boolean);
+
+    setTouchedFields(nextTouchedFields);
+
+    if (hasErrors) {
+      setSubmitSuccess(false);
+      return;
+    }
+
+    setFormValues(INITIAL_CONTACT_FORM);
+    setTouchedFields(INITIAL_TOUCHED);
+    setHasSubmitted(false);
+    setSubmitSuccess(true);
+  }
+
   return (
     <main className="bg-white pb-20 md:pb-24">
       <section className="px-6 pb-14 pt-16 md:px-8 md:pb-20 md:pt-[96px]">
@@ -114,7 +325,7 @@ export default function HomePage() {
 
             <p className="mt-6 max-w-[520px] text-base leading-7 text-[#728096] md:text-lg">
               Зоомагазин «Атлантида» уже 12 лет помогает подбирать корма, оборудование,
-              аксессуары и товары для ухода за домашними питомцами и аквариумными жителями.
+              аксессуары и товары для ухода за домашними животными и аквариумными жителями.
             </p>
 
             <p className="mt-5 max-w-[520px] text-base leading-7 text-[#728096]">
@@ -247,46 +458,111 @@ export default function HomePage() {
                 доставки и подбора товаров.
               </p>
 
-              <form className="mt-6 grid gap-3 md:grid-cols-2">
+              <form
+                ref={formRef}
+                className="mt-6 grid gap-3 md:grid-cols-2"
+                onSubmit={handleSubmit}
+                noValidate
+              >
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-[#5B6880]">Имя</span>
                   <input
                     type="text"
+                    name="name"
                     placeholder="Как к вам обращаться"
+                    value={formValues.name}
+                    onChange={handleTextFieldChange}
+                    onBlur={() => handleFieldBlur("name")}
+                    aria-invalid={touchedFields.name && formErrors.name ? "true" : "false"}
+                    aria-describedby={touchedFields.name && formErrors.name ? "contact-name-error" : undefined}
                     className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
+                  {touchedFields.name && formErrors.name ? (
+                    <span id="contact-name-error" className="text-sm leading-5 text-[#C96565]">
+                      {formErrors.name}
+                    </span>
+                  ) : null}
                 </label>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-medium text-[#5B6880]">Телефон</span>
                   <input
                     type="tel"
                     placeholder="+7 (___) ___-__-__"
+                    name="phone"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={formValues.phone}
+                    onChange={handlePhoneChange}
+                    onBlur={() => handleFieldBlur("phone")}
+                    aria-invalid={touchedFields.phone && formErrors.phone ? "true" : "false"}
+                    aria-describedby={
+                      touchedFields.phone && formErrors.phone ? "contact-phone-error" : undefined
+                    }
                     className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
+                  {touchedFields.phone && formErrors.phone ? (
+                    <span id="contact-phone-error" className="text-sm leading-5 text-[#C96565]">
+                      {formErrors.phone}
+                    </span>
+                  ) : null}
                 </label>
                 <label className="flex flex-col gap-1.5 md:col-span-2">
                   <span className="text-sm font-medium text-[#5B6880]">E-mail</span>
                   <input
                     type="email"
+                    name="email"
                     placeholder="name@example.com"
+                    autoComplete="email"
+                    value={formValues.email}
+                    onChange={handleTextFieldChange}
+                    onBlur={() => handleFieldBlur("email")}
+                    aria-invalid={touchedFields.email && formErrors.email ? "true" : "false"}
+                    aria-describedby={
+                      touchedFields.email && formErrors.email ? "contact-email-error" : undefined
+                    }
                     className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
+                  {touchedFields.email && formErrors.email ? (
+                    <span id="contact-email-error" className="text-sm leading-5 text-[#C96565]">
+                      {formErrors.email}
+                    </span>
+                  ) : null}
                 </label>
                 <label className="flex flex-col gap-1.5 md:col-span-2">
                   <span className="text-sm font-medium text-[#5B6880]">Сообщение</span>
                   <textarea
+                    name="message"
                     placeholder="Расскажите, что вы ищете или по какому вопросу хотите получить консультацию"
                     rows={4}
+                    value={formValues.message}
+                    onChange={handleTextFieldChange}
+                    onBlur={() => handleFieldBlur("message")}
+                    aria-invalid={touchedFields.message && formErrors.message ? "true" : "false"}
+                    aria-describedby={
+                      touchedFields.message && formErrors.message ? "contact-message-error" : undefined
+                    }
                     className="resize-none rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm leading-6 text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
+                  {touchedFields.message && formErrors.message ? (
+                    <span id="contact-message-error" className="text-sm leading-5 text-[#C96565]">
+                      {formErrors.message}
+                    </span>
+                  ) : null}
                 </label>
                 <div className="md:col-span-2">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <button
                     type="submit"
                     className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(47,132,191,0.2)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#256EAC] hover:shadow-[0_14px_28px_rgba(37,110,172,0.24)]"
                   >
                     Отправить сообщение
                   </button>
+                    {submitSuccess ? (
+                      <span className="text-sm leading-6 text-[#5F8F74]">
+                        Сообщение успешно отправлено. Ожидайте ответ, пожалуйста!
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </form>
             </section>
