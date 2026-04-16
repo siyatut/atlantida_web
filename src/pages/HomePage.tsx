@@ -97,7 +97,7 @@ const ABOUT_HIGHLIGHTS: AboutHighlight[] = [
   {
     title: "Консультации по выбору",
     description:
-      "Подскажем по рациону, уходу за питомцем и оснащению аквариума, если нужно подобрать подходящее решение.",
+      "Подскажем по рациону, уходу за питомцем и оснащению аквариума, если нужно подобрать подходящее именно вам решение.",
     Icon: ExpertsIcon,
   },
 ];
@@ -112,33 +112,33 @@ export default function HomePage() {
               Всё для комфортной жизни ваших питомцев
             </h1>
 
-            <p className="mt-5 max-w-[580px] text-base leading-7 text-[#68758A] md:text-lg">
-              Зоомагазин «Атлантида» уже 12 лет помогает подбирать корма, аквариумы, оборудование,
-              аксессуары и товары для ухода.
+            <p className="mt-6 max-w-[520px] text-base leading-7 text-[#728096] md:text-lg">
+              Зоомагазин «Атлантида» уже 12 лет помогает подбирать корма, оборудование,
+              аксессуары и товары для ухода за домашними питомцами и аквариумными жителями.
             </p>
 
-            <p className="mt-4 max-w-[580px] text-base leading-7 text-[#68758A]">
-              При покупке аквариума от 10 000 ₽ действует бесплатная доставка.
+            <p className="mt-5 max-w-[520px] text-base leading-7 text-[#728096]">
+              При покупке аквариума от 10 000 ₽ бесплатно доставим до дома.
             </p>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
               <Link
                 to="/catalog"
-                className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#256EAC]"
+                className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(47,132,191,0.22)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#256EAC] hover:shadow-[0_14px_30px_rgba(37,110,172,0.24)]"
               >
                 Перейти в каталог
               </Link>
               <HomeHashLink
                 hash="#contacts"
-                className="inline-flex items-center justify-center rounded-2xl border border-[#B7DBEE] bg-white/80 px-6 py-3.5 text-sm font-medium text-[#2C5C8E] transition-colors duration-200 hover:bg-white"
+                className="inline-flex items-center justify-center rounded-2xl border border-[#B7DBEE] bg-white/65 px-6 py-3.5 text-sm font-medium text-[#2C5C8E] shadow-[0_8px_20px_rgba(36,73,124,0.06)] transition-all duration-200 hover:scale-[1.02] hover:bg-white hover:shadow-[0_12px_24px_rgba(36,73,124,0.1)]"
               >
                 Связаться с нами
               </HomeHashLink>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
-            <article className="rounded-[26px] border border-[#C7E7F4] bg-white/90 p-5">
+          <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
+            <article className="rounded-[26px] border border-[#C7E7F4] bg-white/90 p-6 shadow-[0_8px_24px_rgba(36,73,124,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(36,73,124,0.1)]">
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D7EEF9] text-[#2F84BF]">
                 <FishIcon className="h-7 w-7" />
               </div>
@@ -148,7 +148,7 @@ export default function HomePage() {
               </p>
             </article>
 
-            <article className="rounded-[26px] border border-[#C7E7F4] bg-white/90 p-5">
+            <article className="rounded-[26px] border border-[#C7E7F4] bg-white/90 p-6 shadow-[0_8px_24px_rgba(36,73,124,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(36,73,124,0.1)]">
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#D7EEF9] text-[#2F84BF]">
                 <CatIcon className="h-7 w-7" />
               </div>
@@ -156,11 +156,11 @@ export default function HomePage() {
                 Товары для всех ваших любимцев
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#68758A]">
-                Корма, лакомства, наполнители, клетки, миски, поводки, игрушки и сопутствующие товары.
+                Корма, наполнители, клетки, миски, поводки, игрушки и другие необходимые товары.
               </p>
             </article>
 
-            <article className="rounded-[26px] border border-[#C7E7F4] bg-white/90 p-5 sm:col-span-2 md:col-span-1 lg:col-span-2">
+            <article className="rounded-[26px] border border-[#C7E7F4] bg-white/90 p-6 shadow-[0_8px_24px_rgba(36,73,124,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_rgba(36,73,124,0.1)] sm:col-span-2 md:col-span-1 lg:col-span-2">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold leading-snug text-[#394452]">
@@ -172,7 +172,7 @@ export default function HomePage() {
                 </div>
                 <HomeHashLink
                   hash="#about"
-                  className="inline-flex items-center text-sm font-medium text-[#4BADE8] transition-colors duration-200 hover:text-[#2F84BF]"
+                  className="inline-flex items-center text-sm font-medium text-[#4BADE8] transition-all duration-200 hover:translate-x-0.5 hover:text-[#2F84BF]"
                 >
                   Подробнее о магазине →
                 </HomeHashLink>
@@ -189,25 +189,25 @@ export default function HomePage() {
         <div className="mx-auto grid max-w-[1240px] gap-10 md:grid-cols-[minmax(0,540px)_minmax(320px,1fr)] xl:gap-14">
           <div className="flex max-w-[520px] flex-col items-start">
             <h2 className="text-3xl font-semibold leading-snug text-[#234579]">О магазине</h2>
-            <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
+            <p className="mt-5 w-full text-base leading-7 text-[#6B778B]">
               «Атлантида» — магазин для тех, кто заботится о питомцах каждый день. Мы работаем с
               2014 года и помогаем подбирать товары для рыбок, кошек, собак, птиц, грызунов и
               рептилий.
             </p>
-            <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
+            <p className="mt-5 w-full text-base leading-7 text-[#6B778B]">
               У нас можно найти как повседневные товары для ухода и кормления, так и всё
               необходимое для аквариумистики: оборудование, декор, рыбок, растения и
               расходные материалы.
             </p>
-            <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
+            <p className="mt-5 w-full text-base leading-7 text-[#6B778B]">
               Нам важно, чтобы выбор был понятным, а консультации действительно помогали.
             </p>
-            <p className="mt-8 w-full border-l-4 border-[#8CCDEA] bg-[#F6FBFE] px-4 py-3 text-sm leading-6 text-[#2C5C8E]">
+            <p className="mt-8 w-full border-l-4 border-[#8CCDEA] bg-[#EEF8FD] px-5 py-4 text-sm leading-6 text-[#2C5C8E]">
               Собрали всё самое важное, чтобы вам было легко и спокойно заботиться о питомцах.
             </p>
             <Link
               to="/reviews"
-              className="mt-5 inline-flex items-center text-sm font-medium text-[#4BADE8] transition-colors duration-200 hover:text-[#2F84BF]"
+              className="mt-6 inline-flex items-center text-sm font-medium text-[#4BADE8] transition-all duration-200 hover:translate-x-0.5 hover:text-[#2F84BF]"
             >
               Смотреть отзывы →
             </Link>
@@ -217,12 +217,12 @@ export default function HomePage() {
             {ABOUT_HIGHLIGHTS.map(({ title, description, Icon }) => (
               <article
                 key={title}
-                className="flex h-full flex-col rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-5"
+                className="flex h-full flex-col rounded-[24px] border border-[#BCE1F1] bg-[#EAF7FD] px-5 pb-6 pt-5 transition-all duration-200 hover:-translate-y-1 hover:shadow-md"
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4297D1] text-white shadow-[0_8px_16px_rgba(47,132,191,0.2)]">
+                <div className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#4297D1] text-white shadow-[0_8px_16px_rgba(47,132,191,0.2)]">
                   <Icon className="h-5 w-5" />
                 </div>
-                <h3 className="mt-4 text-xl font-semibold leading-snug text-[#394452]">{title}</h3>
+                <h3 className="mt-5 text-xl font-semibold leading-snug text-[#394452]">{title}</h3>
                 <p className="mt-2 text-sm leading-6 text-[#68758A]">{description}</p>
               </article>
             ))}
@@ -240,7 +240,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_380px]">
-            <section className="rounded-[28px] border border-[#BCE1F1] bg-[#F6FBFE] p-5 md:p-6">
+            <section className="rounded-[28px] border border-[#BCE1F1] bg-[#F6FBFE] p-5 shadow-[0_10px_24px_rgba(36,73,124,0.05)] md:p-6">
               <h3 className="text-2xl font-semibold leading-snug text-[#394452]">Напишите нам</h3>
               <p className="mt-3 max-w-[560px] text-base leading-7 text-[#6B778B]">
                 Оставьте сообщение, и мы свяжемся с вами по вопросам ассортимента, аквариумистики,
@@ -253,7 +253,7 @@ export default function HomePage() {
                   <input
                     type="text"
                     placeholder="Как к вам обращаться"
-                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5">
@@ -261,7 +261,7 @@ export default function HomePage() {
                   <input
                     type="tel"
                     placeholder="+7 (___) ___-__-__"
-                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 md:col-span-2">
@@ -269,7 +269,7 @@ export default function HomePage() {
                   <input
                     type="email"
                     placeholder="name@example.com"
-                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    className="rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
                 </label>
                 <label className="flex flex-col gap-1.5 md:col-span-2">
@@ -277,13 +277,13 @@ export default function HomePage() {
                   <textarea
                     placeholder="Расскажите, что вы ищете или по какому вопросу хотите получить консультацию"
                     rows={4}
-                    className="resize-none rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm leading-6 text-[#394452] outline-none transition-colors placeholder:text-[#9AA7BA] focus:border-[#7FC4E7]"
+                    className="resize-none rounded-2xl border border-[#CBE3F1] bg-white px-4 py-2.5 text-sm leading-6 text-[#394452] outline-none transition-all duration-200 placeholder:text-[#9AA7BA] focus:border-[#7FC4E7] focus:ring-2 focus:ring-[#7FC4E7]/40"
                   />
                 </label>
                 <div className="md:col-span-2">
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white transition-colors duration-200 hover:bg-[#256EAC]"
+                    className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(47,132,191,0.2)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#256EAC] hover:shadow-[0_14px_28px_rgba(37,110,172,0.24)]"
                   >
                     Отправить сообщение
                   </button>
@@ -291,7 +291,7 @@ export default function HomePage() {
               </form>
             </section>
 
-            <aside className="rounded-[28px] border border-[#BCE1F1] bg-[#EAF7FD] p-5 md:p-6">
+            <aside className="rounded-[28px] border border-[#BCE1F1] bg-[#EAF7FD] p-5 shadow-[0_10px_24px_rgba(36,73,124,0.05)] md:p-6">
               <h3 className="text-2xl font-semibold leading-snug text-[#394452]">Как связаться</h3>
               <ul className="mt-6 space-y-5">
                 <li>
@@ -300,7 +300,7 @@ export default function HomePage() {
                   </p>
                   <a
                     href="tel:+79625046096"
-                    className="mt-2 inline-block text-lg font-medium text-[#2C5C8E] transition-colors hover:text-[#2F84BF]"
+                    className="mt-2 inline-block text-lg font-medium text-[#2C5C8E] transition-all duration-200 hover:text-[#2F84BF]"
                   >
                     +7 (962) 504-60-96
                   </a>
@@ -311,7 +311,7 @@ export default function HomePage() {
                   </p>
                   <a
                     href="mailto:gagin645@yandex.ru"
-                    className="mt-2 inline-block text-lg font-medium text-[#2C5C8E] transition-colors hover:text-[#2F84BF]"
+                    className="mt-2 inline-block text-lg font-medium text-[#2C5C8E] transition-all duration-200 hover:text-[#2F84BF]"
                   >
                     gagin645@yandex.ru
                   </a>
