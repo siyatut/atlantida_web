@@ -105,7 +105,7 @@ const ABOUT_HIGHLIGHTS: AboutHighlight[] = [
 export default function HomePage() {
   return (
     <main className="bg-white pb-20 md:pb-24">
-      <section className="px-6 pb-12 pt-14 md:px-8 md:pb-16 md:pt-[72px]">
+      <section className="px-6 pb-14 pt-16 md:px-8 md:pb-20 md:pt-[96px]">
         <div className="mx-auto grid max-w-[1240px] gap-8 overflow-hidden rounded-[32px] border border-[#B8DEF2] bg-gradient-to-br from-[#EEF8FD] via-[#E1F2FB] to-[#D3EAF7] px-7 py-8 shadow-[0_10px_30px_rgba(36,73,124,0.06)] md:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] md:px-10 md:py-11">
           <div className="max-w-[640px]">
             <h1 className="text-4xl font-semibold leading-tight text-[#234579] md:text-[46px]">
@@ -182,7 +182,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="about" className="bg-white px-6 py-14 md:px-8 md:py-[72px]">
+      <section
+        id="about"
+        className="bg-white px-6 pb-16 pt-14 md:px-8 md:pb-20 md:pt-[72px]"
+      >
         <div className="mx-auto grid max-w-[1240px] gap-10 md:grid-cols-[minmax(0,540px)_minmax(320px,1fr)] xl:gap-14">
           <div className="flex max-w-[520px] flex-col items-start">
             <h2 className="text-3xl font-semibold leading-snug text-[#234579]">О магазине</h2>
@@ -193,7 +196,7 @@ export default function HomePage() {
             </p>
             <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
               У нас можно найти как повседневные товары для ухода и кормления, так и всё
-              необходимое для аквариумистики: оборудование, декор, рыбки, растения и
+              необходимое для аквариумистики: оборудование, декор, рыбок, растения и
               расходные материалы.
             </p>
             <p className="mt-4 w-full text-base leading-7 text-[#6B778B]">
@@ -227,7 +230,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="contacts" className="bg-white px-6 py-12 md:px-8 md:py-14">
+      <section id="contacts" className="bg-white px-6 pb-14 pt-12 md:px-8 md:pb-16 md:pt-14">
         <div className="mx-auto max-w-[1240px]">
           <div className="mb-8 text-center">
             <h2 className="text-3xl font-semibold leading-snug text-[#234579]">Контакты</h2>
