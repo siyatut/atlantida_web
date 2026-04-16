@@ -56,9 +56,19 @@ export default function Header() {
         </nav>
 
         <div className="hidden items-center gap-4 text-[#2F84BF] md:flex">
-          <span className="flex h-8 w-8 items-center justify-center text-lg leading-none">♡</span>
-          <span className="flex h-8 w-8 items-center justify-center text-lg leading-none">📞</span>
-          <span className="text-sm font-medium leading-none">+7 (800) 123-45-67</span>
+          <Link
+            to="/favorites"
+            aria-label="Избранное"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-[#DDF0FA] text-[20px] leading-none text-[#2F84BF] transition-all duration-200 hover:scale-[1.04] hover:bg-[#CDE8F6] hover:text-[#256EAC]"
+          >
+            ♡
+          </Link>
+          <a
+            href="tel:+79625046096"
+            className="text-sm font-medium leading-none text-[#2F84BF] transition-colors duration-200 hover:text-[#256EAC] hover:underline underline-offset-4"
+          >
+            +7 (962) 504-60-96
+          </a>
         </div>
       </div>
     </header>
