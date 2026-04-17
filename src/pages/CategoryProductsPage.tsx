@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
+import ProductCard from "../components/catalog/ProductCard";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
-import { formatCatalogProductPrice } from "../utils/price";
 
 type CategoryProductsRouteState = {
   parentCategoryId?: string;
@@ -133,29 +133,16 @@ function CategoryProductsPage() {
       {!isLoading && !error && products.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product) => (
-            <Link
+            <ProductCard
               key={product.id}
+              product={product}
               to={`/catalog/product/${product.id}`}
               state={{
                 backPath: `/catalog/category/${categoryId}/products`,
                 backLabel: activeCategory?.name ?? "Товары категории",
                 categoryId,
               }}
-            >
-              <article className="rounded border p-4 transition-colors hover:bg-[#F1FCFF]">
-                {product.image ? (
-                  <img
-                    src={product.image}
-                    alt={product.title}
-                    className="mb-4 h-48 w-full object-cover"
-                    loading="lazy"
-                  />
-                ) : null}
-
-                <h2 className="mb-2 text-lg font-semibold">{product.title}</h2>
-                <p>{formatCatalogProductPrice(product)}</p>
-              </article>
-            </Link>
+            />
           ))}
         </div>
       ) : null}

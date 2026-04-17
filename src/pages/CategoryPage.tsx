@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
+import ProductCard from "../components/catalog/ProductCard";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
-import { formatCatalogProductPrice } from "../utils/price";
 
 type CategoryRouteState = {
   parentCategoryId?: string | null;
@@ -241,9 +241,9 @@ function CategoryPage() {
         {!isLoading && !error && childCategories.length === 0 && products.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {products.map((product) => (
-              <Link
+              <ProductCard
                 key={product.id}
-                className="h-full"
+                product={product}
                 to={`/catalog/product/${product.id}`}
                 state={{
                   backPath: `/catalog/category/${parsedCategoryId}`,
@@ -257,35 +257,7 @@ function CategoryPage() {
                   },
                   categoryId: String(parsedCategoryId),
                 }}
-              >
-                <article className="relative flex h-full flex-col overflow-hidden rounded-[22px] border border-[#C6DFEC] bg-[#F8FAFC] p-4 transition-colors hover:bg-white">
-                  <button
-                    type="button"
-                    className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white text-xl text-[#8792A3] shadow-sm"
-                    aria-label="Добавить в избранное"
-                  >
-                    ♡
-                  </button>
-
-                  {product.image ? (
-                    <img
-                      src={product.image}
-                      alt={product.title}
-                      className="mb-4 h-64 w-full rounded-xl object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="mb-4 h-64 w-full rounded-xl bg-[#EEF3F7]" />
-                  )}
-
-                  <h2 className="mb-3 line-clamp-2 text-base font-medium leading-snug text-[#3F4A58] md:text-lg">
-                    {product.title}
-                  </h2>
-                  <p className="mt-auto text-xl font-medium leading-snug text-[#4BADE8]">
-                    {formatCatalogProductPrice(product)}
-                  </p>
-                </article>
-              </Link>
+              />
             ))}
           </div>
         ) : null}

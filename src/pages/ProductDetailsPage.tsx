@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import FavoriteToggleButton from "../components/catalog/FavoriteToggleButton";
 import { getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
 import { formatCatalogProductPrice } from "../utils/price";
@@ -24,30 +25,6 @@ function getErrorMessage(error: unknown): string {
   }
 
   return "Не удалось загрузить товар.";
-}
-
-function getStockLabel(product: CatalogProduct): string | null {
-  if (product.stockStatus) {
-    if (product.stockStatus === "instock") {
-      return "В наличии";
-    }
-
-    if (product.stockStatus === "outofstock") {
-      return "Нет в наличии";
-    }
-
-    return product.stockStatus;
-  }
-
-  if (product.isInStock === true) {
-    return "В наличии";
-  }
-
-  if (product.isInStock === false) {
-    return "Нет в наличии";
-  }
-
-  return null;
 }
 
 function ProductDetailsPage() {
@@ -118,8 +95,6 @@ function ProductDetailsPage() {
     return sanitizeWooHtml(product.shortDescription ?? product.description);
   }, [product]);
 
-  const stockLabel = useMemo(() => (product ? getStockLabel(product) : null), [product]);
-
   const explicitBackPath =
     typeof routeState.backPath === "string" && routeState.backPath.trim() !== ""
       ? routeState.backPath
@@ -157,59 +132,46 @@ function ProductDetailsPage() {
           <article>
             <div className="grid items-start gap-10 lg:grid-cols-[minmax(320px,460px)_1fr]">
               <div>
-                {product.image ? (
-                  <img
-                    src={product.image}
-                    alt={product.title}
-                    className="h-[420px] w-full rounded-[24px] border border-[#DCE4EB] bg-white object-cover md:h-[560px]"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex h-[420px] items-center justify-center rounded-[24px] border border-[#DCE4EB] bg-white text-sm text-slate-500 md:h-[560px]">
-                    Изображение недоступно
-                  </div>
-                )}
+                <div className="flex h-[420px] w-full items-center justify-center rounded-[24px] border border-[#DCE4EB] bg-white p-6 md:h-[560px] md:p-8">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.title}
+                      className="max-h-full max-w-full object-contain"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm text-slate-500">
+                      Изображение недоступно
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="max-w-[620px]">
-                <h1 className="mb-4 text-3xl font-semibold leading-snug text-[#234579]">
-                  {product.title}
-                </h1>
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h1 className="text-3xl font-semibold leading-snug text-[#234579]">
+                      {product.title}
+                    </h1>
 
-                <p className="mb-5 text-xl font-medium leading-snug text-[#4BADE8]">
-                  {formatCatalogProductPrice(product)}
-                </p>
+                    <p className="mt-4 text-xl font-medium leading-snug text-[#4BADE8]">
+                      {formatCatalogProductPrice(product)}
+                    </p>
+                  </div>
 
-                {stockLabel ? (
-                  <p className="mb-7 inline-flex rounded-2xl bg-[#D8F0DD] px-4 py-2 text-sm font-medium text-[#3E8A57]">
-                    ✓ {stockLabel}
-                  </p>
-                ) : null}
+                  <FavoriteToggleButton product={product} />
+                </div>
 
                 {descriptionHtml ? (
                   <div className="mb-7 rounded-3xl bg-[#E2F2FA] p-6 md:p-8">
                     <h2 className="mb-3 text-xl font-medium leading-snug text-[#364250]">Описание</h2>
                     <div
-                      className="prose prose-sm max-w-none text-sm leading-snug text-[#647387] md:text-base"
+                      className="max-w-none text-sm leading-7 text-[#647387] md:text-base [&_p]:mb-3 [&_p:last-child]:mb-0 [&_br]:hidden [&_ul]:my-3 [&_ol]:my-3 [&_li]:mb-1"
                       dangerouslySetInnerHTML={{ __html: descriptionHtml }}
                     />
                   </div>
                 ) : null}
-
-                <div className="flex flex-wrap gap-4">
-                  <button
-                    type="button"
-                    className="inline-flex min-w-[240px] items-center justify-center gap-2 rounded-2xl bg-[#ED4748] px-6 py-4 text-base font-medium text-white shadow-sm"
-                  >
-                    ♡ В избранном
-                  </button>
-                  <button
-                    type="button"
-                    className="inline-flex min-w-[240px] items-center justify-center gap-2 rounded-2xl bg-[#3E9AD4] px-6 py-4 text-base font-medium text-white shadow-sm"
-                  >
-                    ☐ Заказать
-                  </button>
-                </div>
               </div>
             </div>
           </article>
