@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import type { CatalogProduct } from "../../types/catalog";
+import { getAquariumTitleParts } from "../../utils/aquarium-products";
 import { formatCatalogProductPrice } from "../../utils/price";
 import FavoriteToggleButton from "./FavoriteToggleButton";
 
@@ -7,9 +8,19 @@ type ProductCardProps = {
   product: CatalogProduct;
   to: string;
   state?: unknown;
+  splitAquariumVolume?: boolean;
 };
 
-export default function ProductCard({ product, to, state }: ProductCardProps) {
+export default function ProductCard({
+  product,
+  to,
+  state,
+  splitAquariumVolume = false,
+}: ProductCardProps) {
+  const { mainTitle, volumePart } = splitAquariumVolume
+    ? getAquariumTitleParts(product)
+    : { mainTitle: product.title, volumePart: null };
+
   return (
     <Link className="block h-full" to={to} state={state}>
       <article className="flex h-full flex-col rounded-[22px] border border-[#C6DFEC] bg-[#F8FAFC] p-4 transition-colors hover:bg-white">
@@ -32,7 +43,8 @@ export default function ProductCard({ product, to, state }: ProductCardProps) {
 
         <div className="flex flex-1 flex-col">
           <h2 className="mb-3 line-clamp-2 text-base font-medium leading-snug text-[#3F4A58] md:text-lg">
-            {product.title}
+            <span>{mainTitle}</span>
+            {volumePart ? <span className="block">{volumePart}</span> : null}
           </h2>
           <p className="mt-auto text-xl font-medium leading-snug text-[#4BADE8]">
             {formatCatalogProductPrice(product)}

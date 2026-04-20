@@ -3,6 +3,7 @@ import { Link, useLocation, useParams } from "react-router-dom";
 import ProductCard from "../components/catalog/ProductCard";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
+import { isAquariumCategoryBranch } from "../utils/aquarium-products";
 
 type CategoryRouteState = {
   parentCategoryId?: string | null;
@@ -56,6 +57,10 @@ function CategoryPage() {
 
     return categories.find((category) => category.id === String(activeCategory.parent)) ?? null;
   }, [activeCategory, categories]);
+
+  const shouldSplitAquariumTitles = useMemo(() => {
+    return isAquariumCategoryBranch(activeCategory?.id, categories);
+  }, [activeCategory?.id, categories]);
 
   const explicitParentCategoryId =
     typeof routeState.parentCategoryId === "string" && routeState.parentCategoryId.trim() !== ""
@@ -244,6 +249,7 @@ function CategoryPage() {
               <ProductCard
                 key={product.id}
                 product={product}
+                splitAquariumVolume={shouldSplitAquariumTitles}
                 to={`/catalog/product/${product.id}`}
                 state={{
                   backPath: `/catalog/category/${parsedCategoryId}`,
