@@ -5,12 +5,13 @@ import ProductGridPagination from "../components/catalog/ProductGridPagination";
 import ProductCard from "../components/catalog/ProductCard";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
+import { getFilteredAndSortedProducts, sanitizePriceInput } from "../utils/catalog-product-list";
 import {
-  getFilteredAndSortedProducts,
-  sanitizePriceInput,
-  type ProductSortOrder,
-} from "../utils/catalog-product-list";
-import { loadPersistedCatalogFilters, persistCatalogFilters } from "../utils/catalog-filters";
+  getCatalogPageParam,
+  getCatalogPriceParam,
+  getNormalizedCatalogSearchParams,
+  getCatalogSortOrderParam,
+} from "../utils/catalog-query";
 import { getPlainTextFromHtml } from "../utils/text";
 
 type CategoryRouteState = {
@@ -63,10 +64,6 @@ function CategoryPage() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<ProductSortOrder>("default");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [hasRestoredFilters, setHasRestoredFilters] = useState(false);
   const catalogSectionRef = useRef<HTMLDivElement | null>(null);
   const hasMountedPageRef = useRef(false);
 
@@ -94,6 +91,10 @@ function CategoryPage() {
     return categories.find((category) => category.id === String(activeCategory.parent)) ?? null;
   }, [activeCategory, categories]);
 
+  const sortOrder = useMemo(() => getCatalogSortOrderParam(searchParams), [searchParams]);
+  const minPrice = useMemo(() => getCatalogPriceParam(searchParams, "minPrice"), [searchParams]);
+  const maxPrice = useMemo(() => getCatalogPriceParam(searchParams, "maxPrice"), [searchParams]);
+
   const visibleProducts = useMemo(() => {
     return getFilteredAndSortedProducts(products, minPrice, maxPrice, sortOrder);
   }, [maxPrice, minPrice, products, sortOrder]);
@@ -101,16 +102,7 @@ function CategoryPage() {
   const categoryDescription = useMemo(() => {
     return getPlainTextFromHtml(activeCategory?.description ?? null);
   }, [activeCategory?.description]);
-
-  const pageFromSearchParams = useMemo(() => {
-    const rawPage = Number(searchParams.get("page"));
-
-    if (!Number.isInteger(rawPage) || rawPage < 1) {
-      return 1;
-    }
-
-    return rawPage;
-  }, [searchParams]);
+  const pageFromSearchParams = useMemo(() => getCatalogPageParam(searchParams), [searchParams]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(visibleProducts.length / PRODUCTS_PER_PAGE)),
@@ -125,6 +117,14 @@ function CategoryPage() {
     const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
     return visibleProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
   }, [currentPage, totalPages, visibleProducts]);
+
+  useEffect(() => {
+    const normalizedSearchParams = getNormalizedCatalogSearchParams(searchParams);
+
+    if (normalizedSearchParams.toString() !== searchParams.toString()) {
+      setSearchParams(normalizedSearchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const explicitParentCategoryId =
     typeof routeState.parentCategoryId === "string" && routeState.parentCategoryId.trim() !== ""
@@ -235,34 +235,6 @@ function CategoryPage() {
   }, [isValidCategoryId, parsedCategoryId]);
 
   useEffect(() => {
-    setHasRestoredFilters(false);
-
-    const currentCategoryId = String(parsedCategoryId);
-    const persistedFilters = loadPersistedCatalogFilters(currentCategoryId);
-
-    if (persistedFilters) {
-      setSortOrder(persistedFilters.sortOrder);
-      setMinPrice(persistedFilters.minPrice);
-      setMaxPrice(persistedFilters.maxPrice);
-      setHasRestoredFilters(true);
-      return;
-    }
-
-    setSortOrder("default");
-    setMinPrice("");
-    setMaxPrice("");
-    setHasRestoredFilters(true);
-  }, [parsedCategoryId]);
-
-  useEffect(() => {
-    if (!isValidCategoryId || !hasRestoredFilters) {
-      return;
-    }
-
-    persistCatalogFilters(String(parsedCategoryId), sortOrder, minPrice, maxPrice);
-  }, [hasRestoredFilters, isValidCategoryId, maxPrice, minPrice, parsedCategoryId, sortOrder]);
-
-  useEffect(() => {
     if (pageFromSearchParams <= totalPages) {
       return;
     }
@@ -290,34 +262,77 @@ function CategoryPage() {
     });
   }, [currentPage]);
 
-  function resetControls() {
-    setSortOrder("default");
-    setMinPrice("");
-    setMaxPrice("");
-    resetPageParam();
+  function updateCatalogSearchParams(
+    update: (nextSearchParams: URLSearchParams) => void,
+    replace = true,
+  ) {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    update(nextSearchParams);
+    setSearchParams(nextSearchParams, replace ? { replace: true } : undefined);
   }
 
-  function resetPageParam() {
-    if (!searchParams.has("page")) {
-      return;
-    }
+  function handleSortOrderChange(value: "default" | "asc" | "desc") {
+    updateCatalogSearchParams((nextSearchParams) => {
+      if (value === "default") {
+        nextSearchParams.delete("sort");
+      } else {
+        nextSearchParams.set("sort", value);
+      }
 
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete("page");
-    setSearchParams(nextSearchParams, { replace: true });
+      nextSearchParams.delete("page");
+    });
+  }
+
+  function handleMinPriceChange(value: string) {
+    const sanitizedValue = sanitizePriceInput(value);
+
+    updateCatalogSearchParams((nextSearchParams) => {
+      if (sanitizedValue === "") {
+        nextSearchParams.delete("minPrice");
+      } else {
+        nextSearchParams.set("minPrice", sanitizedValue);
+      }
+
+      nextSearchParams.delete("page");
+    });
+  }
+
+  function handleMaxPriceChange(value: string) {
+    const sanitizedValue = sanitizePriceInput(value);
+
+    updateCatalogSearchParams((nextSearchParams) => {
+      if (sanitizedValue === "") {
+        nextSearchParams.delete("maxPrice");
+      } else {
+        nextSearchParams.set("maxPrice", sanitizedValue);
+      }
+
+      nextSearchParams.delete("page");
+    });
+  }
+
+  function resetControls() {
+    updateCatalogSearchParams((nextSearchParams) => {
+      nextSearchParams.delete("sort");
+      nextSearchParams.delete("minPrice");
+      nextSearchParams.delete("maxPrice");
+      nextSearchParams.delete("page");
+    });
   }
 
   function handlePageChange(page: number) {
-    const nextSearchParams = new URLSearchParams(searchParams);
     const normalizedPage = Math.max(1, Math.min(page, totalPages));
 
-    if (normalizedPage <= 1) {
-      nextSearchParams.delete("page");
-    } else {
-      nextSearchParams.set("page", String(normalizedPage));
-    }
-
-    setSearchParams(nextSearchParams);
+    updateCatalogSearchParams(
+      (nextSearchParams) => {
+        if (normalizedPage <= 1) {
+          nextSearchParams.delete("page");
+        } else {
+          nextSearchParams.set("page", String(normalizedPage));
+        }
+      },
+      false,
+    );
   }
 
   return (
@@ -403,18 +418,9 @@ function CategoryPage() {
                   sortOrder={sortOrder}
                   minPrice={minPrice}
                   maxPrice={maxPrice}
-                  onSortOrderChange={(value) => {
-                    setSortOrder(value);
-                    resetPageParam();
-                  }}
-                  onMinPriceChange={(value) => {
-                    setMinPrice(sanitizePriceInput(value));
-                    resetPageParam();
-                  }}
-                  onMaxPriceChange={(value) => {
-                    setMaxPrice(sanitizePriceInput(value));
-                    resetPageParam();
-                  }}
+                  onSortOrderChange={handleSortOrderChange}
+                  onMinPriceChange={handleMinPriceChange}
+                  onMaxPriceChange={handleMaxPriceChange}
                   onReset={resetControls}
                 />
               </div>
