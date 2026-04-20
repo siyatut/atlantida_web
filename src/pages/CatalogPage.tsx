@@ -9,6 +9,7 @@ import MouseIcon from "../assets/icons_category/mouse.svg?react";
 import ReptileIcon from "../assets/icons_category/reptile.svg?react";
 import { getCatalogCategories } from "../services/catalog.service";
 import type { CatalogCategory } from "../types/catalog";
+import { getPlainTextFromHtml } from "../utils/text";
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -19,12 +20,13 @@ function getErrorMessage(error: unknown): string {
 }
 
 function getCategoryDescription(description: string | null): string {
-  if (!description) {
+  const plainText = getPlainTextFromHtml(description);
+
+  if (!plainText) {
     return "Исследуйте подборку товаров в этой категории.";
   }
 
-  const plainText = description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-  return plainText !== "" ? plainText : "Исследуйте подборку товаров в этой категории.";
+  return plainText;
 }
 
 function getSubcategoryLabel(count: number): string {

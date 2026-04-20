@@ -1,14 +1,42 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import ProductGridControls from "../components/catalog/ProductGridControls";
+import ProductGridPagination from "../components/catalog/ProductGridPagination";
 import ProductCard from "../components/catalog/ProductCard";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
-import { isAquariumCategoryBranch } from "../utils/aquarium-products";
+import {
+  getFilteredAndSortedProducts,
+  sanitizePriceInput,
+  type ProductSortOrder,
+} from "../utils/catalog-product-list";
+import { loadPersistedCatalogFilters, persistCatalogFilters } from "../utils/catalog-filters";
+import { getPlainTextFromHtml } from "../utils/text";
 
 type CategoryProductsRouteState = {
   parentCategoryId?: string;
   parentCategoryName?: string;
 };
+
+function getProductsLabel(count: number): string {
+  const lastTwoDigits = count % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return "товаров";
+  }
+
+  const lastDigit = count % 10;
+
+  if (lastDigit === 1) {
+    return "товар";
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return "товара";
+  }
+
+  return "товаров";
+}
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -19,8 +47,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 function CategoryProductsPage() {
+  const PRODUCTS_PER_PAGE = 20;
   const { categoryId } = useParams<{ categoryId: string }>();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const routeState = (location.state ?? {}) as CategoryProductsRouteState;
   const parsedCategoryId = Number(categoryId);
   const isValidCategoryId = Number.isFinite(parsedCategoryId) && parsedCategoryId > 0;
@@ -29,6 +59,12 @@ function CategoryProductsPage() {
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<ProductSortOrder>("default");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [hasRestoredFilters, setHasRestoredFilters] = useState(false);
+  const catalogSectionRef = useRef<HTMLDivElement | null>(null);
+  const hasMountedPageRef = useRef(false);
 
   const activeCategory = useMemo(() => {
     if (!isValidCategoryId) {
@@ -63,9 +99,37 @@ function CategoryProductsPage() {
     return parentCategory?.name ?? "Категория";
   }, [categories, parentCategoryId, routeState.parentCategoryName]);
 
-  const shouldSplitAquariumTitles = useMemo(() => {
-    return isAquariumCategoryBranch(activeCategory?.id, categories);
-  }, [activeCategory?.id, categories]);
+  const visibleProducts = useMemo(() => {
+    return getFilteredAndSortedProducts(products, minPrice, maxPrice, sortOrder);
+  }, [maxPrice, minPrice, products, sortOrder]);
+
+  const categoryDescription = useMemo(() => {
+    return getPlainTextFromHtml(activeCategory?.description ?? null);
+  }, [activeCategory?.description]);
+
+  const pageFromSearchParams = useMemo(() => {
+    const rawPage = Number(searchParams.get("page"));
+
+    if (!Number.isInteger(rawPage) || rawPage < 1) {
+      return 1;
+    }
+
+    return rawPage;
+  }, [searchParams]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visibleProducts.length / PRODUCTS_PER_PAGE)),
+    [visibleProducts.length],
+  );
+
+  const currentPage = useMemo(() => {
+    return Math.min(pageFromSearchParams, totalPages);
+  }, [pageFromSearchParams, totalPages]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return visibleProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  }, [currentPage, totalPages, visibleProducts]);
 
   useEffect(() => {
     if (!isValidCategoryId) {
@@ -117,41 +181,183 @@ function CategoryProductsPage() {
     };
   }, [isValidCategoryId, parsedCategoryId]);
 
+  useEffect(() => {
+    setHasRestoredFilters(false);
+
+    const currentCategoryId = String(parsedCategoryId);
+    const persistedFilters = loadPersistedCatalogFilters(currentCategoryId);
+
+    if (persistedFilters) {
+      setSortOrder(persistedFilters.sortOrder);
+      setMinPrice(persistedFilters.minPrice);
+      setMaxPrice(persistedFilters.maxPrice);
+      setHasRestoredFilters(true);
+      return;
+    }
+
+    setSortOrder("default");
+    setMinPrice("");
+    setMaxPrice("");
+    setHasRestoredFilters(true);
+  }, [parsedCategoryId]);
+
+  useEffect(() => {
+    if (!isValidCategoryId || !hasRestoredFilters) {
+      return;
+    }
+
+    persistCatalogFilters(String(parsedCategoryId), sortOrder, minPrice, maxPrice);
+  }, [hasRestoredFilters, isValidCategoryId, maxPrice, minPrice, parsedCategoryId, sortOrder]);
+
+  useEffect(() => {
+    if (pageFromSearchParams <= totalPages) {
+      return;
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+
+    if (totalPages <= 1) {
+      nextSearchParams.delete("page");
+    } else {
+      nextSearchParams.set("page", String(totalPages));
+    }
+
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [pageFromSearchParams, searchParams, setSearchParams, totalPages]);
+
+  useEffect(() => {
+    if (!hasMountedPageRef.current) {
+      hasMountedPageRef.current = true;
+      return;
+    }
+
+    catalogSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [currentPage]);
+
+  function resetControls() {
+    setSortOrder("default");
+    setMinPrice("");
+    setMaxPrice("");
+    resetPageParam();
+  }
+
+  function resetPageParam() {
+    if (!searchParams.has("page")) {
+      return;
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete("page");
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  function handlePageChange(page: number) {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    const normalizedPage = Math.max(1, Math.min(page, totalPages));
+
+    if (normalizedPage <= 1) {
+      nextSearchParams.delete("page");
+    } else {
+      nextSearchParams.set("page", String(normalizedPage));
+    }
+
+    setSearchParams(nextSearchParams);
+  }
+
   return (
     <main className="px-4 py-10">
-      <div className="mb-6">
-        <Link
-          to={parentCategoryId ? `/catalog/category/${parentCategoryId}` : "/catalog"}
-          className="text-sm text-slate-700 hover:text-slate-900"
-        >
-          ← {parentCategoryId ? parentCategoryName : "Каталог"}
-        </Link>
-      </div>
-
-      <h1 className="mb-6 text-2xl font-semibold">{activeCategory?.name ?? "Товары категории"}</h1>
-
-      {isLoading ? <p>Загрузка товаров...</p> : null}
-      {error ? <p>{error}</p> : null}
-
-      {!isLoading && !error && products.length === 0 ? <p>В этой подкатегории пока нет товаров.</p> : null}
-
-      {!isLoading && !error && products.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              splitAquariumVolume={shouldSplitAquariumTitles}
-              to={`/catalog/product/${product.id}`}
-              state={{
-                backPath: `/catalog/category/${categoryId}/products`,
-                backLabel: activeCategory?.name ?? "Товары категории",
-                categoryId,
-              }}
-            />
-          ))}
+      <div className="mx-auto max-w-[1240px]">
+        <div className="mb-6">
+          <Link
+            to={parentCategoryId ? `/catalog/category/${parentCategoryId}` : "/catalog"}
+            className="text-sm text-slate-700 hover:text-slate-900"
+          >
+            ← {parentCategoryId ? parentCategoryName : "Каталог"}
+          </Link>
         </div>
-      ) : null}
+
+        <div ref={catalogSectionRef} className="min-w-0 scroll-mt-28">
+          <h1 className="text-2xl font-semibold text-[#234579]">
+            {activeCategory?.name ?? "Товары категории"}
+          </h1>
+          {categoryDescription ? (
+            <p className="mt-2 max-w-[720px] text-base leading-snug text-[#6B778B]">
+              {categoryDescription}
+            </p>
+          ) : null}
+        </div>
+
+        {!isLoading && !error && products.length > 0 ? (
+          <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0 flex-1">
+              <ProductGridControls
+                sortOrder={sortOrder}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
+                onSortOrderChange={(value) => {
+                  setSortOrder(value);
+                  resetPageParam();
+                }}
+                onMinPriceChange={(value) => {
+                  setMinPrice(sanitizePriceInput(value));
+                  resetPageParam();
+                }}
+                onMaxPriceChange={(value) => {
+                  setMaxPrice(sanitizePriceInput(value));
+                  resetPageParam();
+                }}
+                onReset={resetControls}
+              />
+            </div>
+            <p className="text-sm leading-snug text-[#7B899C] lg:pb-3 lg:text-right">
+              {paginatedProducts.length} {getProductsLabel(paginatedProducts.length)}
+            </p>
+          </div>
+        ) : null}
+
+        {isLoading ? <p className="mt-6">Загрузка товаров...</p> : null}
+        {error ? <p className="mt-6">{error}</p> : null}
+
+        {!isLoading && !error && products.length === 0 ? (
+          <p className="mt-6">В этой подкатегории пока нет товаров.</p>
+        ) : null}
+
+        {!isLoading && !error && products.length > 0 ? (
+          <>
+            {visibleProducts.length === 0 ? (
+              <p className="mt-8 text-base leading-snug text-[#6B778B]">
+                По выбранным параметрам товары не найдены
+              </p>
+            ) : (
+              <>
+                <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      formatTitleSuffix
+                      to={`/catalog/product/${product.id}`}
+                      state={{
+                        backPath: `/catalog/category/${categoryId}/products`,
+                        backLabel: activeCategory?.name ?? "Товары категории",
+                        categoryId,
+                      }}
+                    />
+                  ))}
+                </div>
+                <ProductGridPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </>
+            )}
+          </>
+        ) : null}
+      </div>
     </main>
   );
 }

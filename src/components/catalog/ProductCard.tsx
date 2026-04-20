@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { CatalogProduct } from "../../types/catalog";
-import { getAquariumTitleParts } from "../../utils/aquarium-products";
+import { getCatalogCardTitleParts } from "../../utils/catalog-title";
 import { formatCatalogProductPrice } from "../../utils/price";
 import FavoriteToggleButton from "./FavoriteToggleButton";
 
@@ -8,18 +8,18 @@ type ProductCardProps = {
   product: CatalogProduct;
   to: string;
   state?: unknown;
-  splitAquariumVolume?: boolean;
+  formatTitleSuffix?: boolean;
 };
 
 export default function ProductCard({
   product,
   to,
   state,
-  splitAquariumVolume = false,
+  formatTitleSuffix = false,
 }: ProductCardProps) {
-  const { mainTitle, volumePart } = splitAquariumVolume
-    ? getAquariumTitleParts(product)
-    : { mainTitle: product.title, volumePart: null };
+  const { mainTitle, suffixPart } = formatTitleSuffix
+    ? getCatalogCardTitleParts(product)
+    : { mainTitle: product.title, suffixPart: null };
 
   return (
     <Link className="block h-full" to={to} state={state}>
@@ -44,7 +44,7 @@ export default function ProductCard({
         <div className="flex flex-1 flex-col">
           <h2 className="mb-3 line-clamp-2 text-base font-medium leading-snug text-[#3F4A58] md:text-lg">
             <span>{mainTitle}</span>
-            {volumePart ? <span className="block">{volumePart}</span> : null}
+            {suffixPart ? <span className="block">{suffixPart}</span> : null}
           </h2>
           <p className="mt-auto text-xl font-medium leading-snug text-[#4BADE8]">
             {formatCatalogProductPrice(product)}

@@ -1,7 +1,8 @@
 import type { CatalogCategory, CatalogProduct, CatalogProductCategory } from "../types/catalog";
 
 const AQUARIUM_CATEGORY_PATTERN = /(аквари|akvar|aquar)/i;
-const AQUARIUM_VOLUME_SUFFIX_PATTERN = /^(.*\S)\s+(\d+\s+литр(?:ов|а)?)$/iu;
+const TITLE_SIZE_SUFFIX_PATTERN =
+  /^(.*\S)\s+(\d+(?:[.,]\d+)?\s*(?:литр(?:ов|а)?|л|ml|мл|g|гр|kg|кг))$/iu;
 
 function matchesAquariumCategory(value: string): boolean {
   return AQUARIUM_CATEGORY_PATTERN.test(value.trim());
@@ -36,29 +37,30 @@ export function isAquariumCategoryBranch(
   return false;
 }
 
-export function getAquariumTitleParts(
+export function getCatalogCardTitleParts(
   product: CatalogProduct,
-): { mainTitle: string; volumePart: string | null } {
+): { mainTitle: string; suffixPart: string | null } {
+  const normalizedTitle = product.title.trim();
   const isAquariumProduct = product.categories.some((category) => isAquariumCategoryLike(category));
 
   if (!isAquariumProduct) {
     return {
       mainTitle: product.title,
-      volumePart: null,
+      suffixPart: null,
     };
   }
 
-  const match = product.title.trim().match(AQUARIUM_VOLUME_SUFFIX_PATTERN);
+  const match = normalizedTitle.match(TITLE_SIZE_SUFFIX_PATTERN);
 
   if (!match) {
     return {
       mainTitle: product.title,
-      volumePart: null,
+      suffixPart: null,
     };
   }
 
   return {
     mainTitle: match[1],
-    volumePart: match[2],
+    suffixPart: match[2],
   };
 }

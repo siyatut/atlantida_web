@@ -1,5 +1,6 @@
 import type { WooStoreProduct } from "../data-access/woocommerce/store-api";
 import type { CatalogProduct } from "../types/catalog";
+import { decodeHtmlEntities } from "../utils/text";
 
 function getString(value: unknown): string | null {
   return typeof value === "string" && value.trim() !== "" ? value : null;
@@ -12,7 +13,7 @@ export function mapWooProduct(raw: WooStoreProduct): CatalogProduct {
 
   return {
     id: String(raw.id),
-    title: raw.name ?? "Товар",
+    title: decodeHtmlEntities(raw.name ?? "Товар"),
     slug: getString(raw.slug),
     isInStock: typeof raw.is_in_stock === "boolean" ? raw.is_in_stock : null,
     stockStatus: getString(raw.stock_status),
@@ -35,7 +36,7 @@ export function mapWooProduct(raw: WooStoreProduct): CatalogProduct {
     category: categories.length > 0 ? getString(categories[0]?.slug) : null,
     categories: categories.map((category) => ({
       id: String(category.id),
-      name: category.name ?? "",
+      name: decodeHtmlEntities(category.name ?? ""),
       slug: category.slug ?? "",
     })),
     image: images.length > 0 ? getString(images[0]?.src) : null,

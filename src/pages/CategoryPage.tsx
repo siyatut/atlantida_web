@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
+import ProductGridControls from "../components/catalog/ProductGridControls";
+import ProductGridPagination from "../components/catalog/ProductGridPagination";
 import ProductCard from "../components/catalog/ProductCard";
 import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
-import { isAquariumCategoryBranch } from "../utils/aquarium-products";
+import {
+  getFilteredAndSortedProducts,
+  sanitizePriceInput,
+  type ProductSortOrder,
+} from "../utils/catalog-product-list";
+import { loadPersistedCatalogFilters, persistCatalogFilters } from "../utils/catalog-filters";
+import { getPlainTextFromHtml } from "../utils/text";
 
 type CategoryRouteState = {
   parentCategoryId?: string | null;
@@ -12,6 +20,26 @@ type CategoryRouteState = {
   ancestorCategoryId?: string | null;
   ancestorCategoryName?: string | null;
 };
+
+function getProductsLabel(count: number): string {
+  const lastTwoDigits = count % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return "товаров";
+  }
+
+  const lastDigit = count % 10;
+
+  if (lastDigit === 1) {
+    return "товар";
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return "товара";
+  }
+
+  return "товаров";
+}
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -22,8 +50,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 function CategoryPage() {
+  const PRODUCTS_PER_PAGE = 20;
   const { categoryId } = useParams<{ categoryId: string }>();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const routeState = (location.state ?? {}) as CategoryRouteState;
 
   const parsedCategoryId = Number(categoryId);
@@ -33,6 +63,12 @@ function CategoryPage() {
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<ProductSortOrder>("default");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [hasRestoredFilters, setHasRestoredFilters] = useState(false);
+  const catalogSectionRef = useRef<HTMLDivElement | null>(null);
+  const hasMountedPageRef = useRef(false);
 
   const activeCategory = useMemo(() => {
     if (!isValidCategoryId) {
@@ -58,9 +94,37 @@ function CategoryPage() {
     return categories.find((category) => category.id === String(activeCategory.parent)) ?? null;
   }, [activeCategory, categories]);
 
-  const shouldSplitAquariumTitles = useMemo(() => {
-    return isAquariumCategoryBranch(activeCategory?.id, categories);
-  }, [activeCategory?.id, categories]);
+  const visibleProducts = useMemo(() => {
+    return getFilteredAndSortedProducts(products, minPrice, maxPrice, sortOrder);
+  }, [maxPrice, minPrice, products, sortOrder]);
+
+  const categoryDescription = useMemo(() => {
+    return getPlainTextFromHtml(activeCategory?.description ?? null);
+  }, [activeCategory?.description]);
+
+  const pageFromSearchParams = useMemo(() => {
+    const rawPage = Number(searchParams.get("page"));
+
+    if (!Number.isInteger(rawPage) || rawPage < 1) {
+      return 1;
+    }
+
+    return rawPage;
+  }, [searchParams]);
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(visibleProducts.length / PRODUCTS_PER_PAGE)),
+    [visibleProducts.length],
+  );
+
+  const currentPage = useMemo(() => {
+    return Math.min(pageFromSearchParams, totalPages);
+  }, [pageFromSearchParams, totalPages]);
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return visibleProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+  }, [currentPage, totalPages, visibleProducts]);
 
   const explicitParentCategoryId =
     typeof routeState.parentCategoryId === "string" && routeState.parentCategoryId.trim() !== ""
@@ -170,6 +234,92 @@ function CategoryPage() {
     };
   }, [isValidCategoryId, parsedCategoryId]);
 
+  useEffect(() => {
+    setHasRestoredFilters(false);
+
+    const currentCategoryId = String(parsedCategoryId);
+    const persistedFilters = loadPersistedCatalogFilters(currentCategoryId);
+
+    if (persistedFilters) {
+      setSortOrder(persistedFilters.sortOrder);
+      setMinPrice(persistedFilters.minPrice);
+      setMaxPrice(persistedFilters.maxPrice);
+      setHasRestoredFilters(true);
+      return;
+    }
+
+    setSortOrder("default");
+    setMinPrice("");
+    setMaxPrice("");
+    setHasRestoredFilters(true);
+  }, [parsedCategoryId]);
+
+  useEffect(() => {
+    if (!isValidCategoryId || !hasRestoredFilters) {
+      return;
+    }
+
+    persistCatalogFilters(String(parsedCategoryId), sortOrder, minPrice, maxPrice);
+  }, [hasRestoredFilters, isValidCategoryId, maxPrice, minPrice, parsedCategoryId, sortOrder]);
+
+  useEffect(() => {
+    if (pageFromSearchParams <= totalPages) {
+      return;
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+
+    if (totalPages <= 1) {
+      nextSearchParams.delete("page");
+    } else {
+      nextSearchParams.set("page", String(totalPages));
+    }
+
+    setSearchParams(nextSearchParams, { replace: true });
+  }, [pageFromSearchParams, searchParams, setSearchParams, totalPages]);
+
+  useEffect(() => {
+    if (!hasMountedPageRef.current) {
+      hasMountedPageRef.current = true;
+      return;
+    }
+
+    catalogSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [currentPage]);
+
+  function resetControls() {
+    setSortOrder("default");
+    setMinPrice("");
+    setMaxPrice("");
+    resetPageParam();
+  }
+
+  function resetPageParam() {
+    if (!searchParams.has("page")) {
+      return;
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete("page");
+    setSearchParams(nextSearchParams, { replace: true });
+  }
+
+  function handlePageChange(page: number) {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    const normalizedPage = Math.max(1, Math.min(page, totalPages));
+
+    if (normalizedPage <= 1) {
+      nextSearchParams.delete("page");
+    } else {
+      nextSearchParams.set("page", String(normalizedPage));
+    }
+
+    setSearchParams(nextSearchParams);
+  }
+
   return (
     <main className="px-6 py-12 md:px-8 md:py-16">
       <div className="mx-auto max-w-[1240px]">
@@ -194,17 +344,19 @@ function CategoryPage() {
           </Link>
         </div>
 
-        <h1 className="mb-2 text-3xl font-semibold leading-snug text-[#234579]">
-          {resolvedCurrentCategoryName}
-        </h1>
+        <div ref={catalogSectionRef} className="scroll-mt-28">
+          <h1 className="mb-2 text-3xl font-semibold leading-snug text-[#234579]">
+            {resolvedCurrentCategoryName}
+          </h1>
 
-        {activeCategory?.description ? (
-          <p className="mb-10 line-clamp-2 text-base leading-snug text-[#6B778B]">
-            {activeCategory.description.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()}
-          </p>
-        ) : (
-          <div className="mb-10" />
-        )}
+          {categoryDescription ? (
+            <p className="mb-10 line-clamp-2 text-base leading-snug text-[#6B778B]">
+              {categoryDescription}
+            </p>
+          ) : (
+            <div className="mb-10" />
+          )}
+        </div>
 
         {isLoading ? <p className="text-base text-[#6B778B]">Загрузка категорий...</p> : null}
         {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
@@ -244,28 +396,69 @@ function CategoryPage() {
         ) : null}
 
         {!isLoading && !error && childCategories.length === 0 && products.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                splitAquariumVolume={shouldSplitAquariumTitles}
-                to={`/catalog/product/${product.id}`}
-                state={{
-                  backPath: `/catalog/category/${parsedCategoryId}`,
-                  backLabel: resolvedCurrentCategoryName,
-                  backState: {
-                    parentCategoryId: explicitParentCategoryId,
-                    parentCategoryName: explicitParentCategoryName,
-                    currentCategoryName: resolvedCurrentCategoryName,
-                    ancestorCategoryId: explicitAncestorCategoryId,
-                    ancestorCategoryName: explicitAncestorCategoryName,
-                  },
-                  categoryId: String(parsedCategoryId),
-                }}
-              />
-            ))}
-          </div>
+          <>
+            <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0 flex-1">
+                <ProductGridControls
+                  sortOrder={sortOrder}
+                  minPrice={minPrice}
+                  maxPrice={maxPrice}
+                  onSortOrderChange={(value) => {
+                    setSortOrder(value);
+                    resetPageParam();
+                  }}
+                  onMinPriceChange={(value) => {
+                    setMinPrice(sanitizePriceInput(value));
+                    resetPageParam();
+                  }}
+                  onMaxPriceChange={(value) => {
+                    setMaxPrice(sanitizePriceInput(value));
+                    resetPageParam();
+                  }}
+                  onReset={resetControls}
+                />
+              </div>
+              <p className="text-sm leading-snug text-[#7B899C] lg:pb-3 lg:text-right">
+                {paginatedProducts.length} {getProductsLabel(paginatedProducts.length)}
+              </p>
+            </div>
+
+            {visibleProducts.length === 0 ? (
+              <p className="mt-8 text-base leading-snug text-[#6B778B]">
+                По выбранным параметрам товары не найдены
+              </p>
+            ) : (
+              <>
+                <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                  {paginatedProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      formatTitleSuffix
+                      to={`/catalog/product/${product.id}`}
+                      state={{
+                        backPath: `/catalog/category/${parsedCategoryId}`,
+                        backLabel: resolvedCurrentCategoryName,
+                        backState: {
+                          parentCategoryId: explicitParentCategoryId,
+                          parentCategoryName: explicitParentCategoryName,
+                          currentCategoryName: resolvedCurrentCategoryName,
+                          ancestorCategoryId: explicitAncestorCategoryId,
+                          ancestorCategoryName: explicitAncestorCategoryName,
+                        },
+                        categoryId: String(parsedCategoryId),
+                      }}
+                    />
+                  ))}
+                </div>
+                <ProductGridPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              </>
+            )}
+          </>
         ) : null}
       </div>
     </main>
