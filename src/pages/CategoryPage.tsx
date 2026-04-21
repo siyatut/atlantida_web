@@ -235,6 +235,10 @@ function CategoryPage() {
   }, [isValidCategoryId, parsedCategoryId]);
 
   useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
     if (pageFromSearchParams <= totalPages) {
       return;
     }
@@ -248,7 +252,7 @@ function CategoryPage() {
     }
 
     setSearchParams(nextSearchParams, { replace: true });
-  }, [pageFromSearchParams, searchParams, setSearchParams, totalPages]);
+  }, [isLoading, pageFromSearchParams, searchParams, setSearchParams, totalPages]);
 
   useEffect(() => {
     if (!hasMountedPageRef.current) {
