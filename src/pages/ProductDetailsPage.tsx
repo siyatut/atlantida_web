@@ -10,12 +10,16 @@ type ProductRouteState = {
   backPath?: string;
   backLabel?: string;
   categoryId?: string;
+  backScrollY?: number | null;
+  openedProductId?: string | null;
   backState?: {
     parentCategoryId?: string | null;
     parentCategoryName?: string | null;
     currentCategoryName?: string | null;
     ancestorCategoryId?: string | null;
     ancestorCategoryName?: string | null;
+    backScrollY?: number | null;
+    openedProductId?: string | null;
   };
 };
 
@@ -106,8 +110,23 @@ function ProductDetailsPage() {
     explicitBackPath ?? (fallbackCategory ? `/catalog/category/${fallbackCategory.id}` : "/catalog");
 
   function handleBackNavigation() {
+    const nextBackState =
+      routeState.backState || routeState.backScrollY != null
+        ? {
+            ...(routeState.backState ?? {}),
+            backScrollY:
+              typeof routeState.backScrollY === "number" && Number.isFinite(routeState.backScrollY)
+                ? routeState.backScrollY
+                : null,
+            openedProductId:
+              typeof routeState.openedProductId === "string" && routeState.openedProductId.trim() !== ""
+                ? routeState.openedProductId
+                : null,
+          }
+        : undefined;
+
     navigate(breadcrumbBackPath, {
-      state: routeState.backState,
+      state: nextBackState,
     });
   }
 

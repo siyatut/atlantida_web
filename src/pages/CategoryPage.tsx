@@ -12,6 +12,17 @@ import {
   getNormalizedCatalogSearchParams,
   getCatalogSortOrderParam,
 } from "../utils/catalog-query";
+import {
+  getOptionalRouteLabel,
+  getOptionalScrollPosition,
+  resolveCatalogBackLabel,
+  resolveCategoryDisplayTitle,
+} from "../utils/catalog-navigation";
+import {
+  readPersistedCatalogPageContext,
+  writePersistedCatalogPageContext,
+} from "../utils/catalog-page-context";
+import { getStickyHeaderHeight } from "../utils/hash-scroll";
 import { getPlainTextFromHtml } from "../utils/text";
 
 type CategoryRouteState = {
@@ -20,7 +31,11 @@ type CategoryRouteState = {
   currentCategoryName?: string | null;
   ancestorCategoryId?: string | null;
   ancestorCategoryName?: string | null;
+  backScrollY?: number | null;
+  openedProductId?: string | null;
 };
+
+const PRODUCT_ROW_TOP_GAP = 16;
 
 function getProductsLabel(count: number): string {
   const lastTwoDigits = count % 100;
@@ -56,6 +71,7 @@ function CategoryPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const routeState = (location.state ?? {}) as CategoryRouteState;
+  const persistedPageContext = readPersistedCatalogPageContext(categoryId);
 
   const parsedCategoryId = Number(categoryId);
   const isValidCategoryId = Number.isFinite(parsedCategoryId) && parsedCategoryId > 0;
@@ -66,6 +82,7 @@ function CategoryPage() {
   const [error, setError] = useState<string | null>(null);
   const catalogSectionRef = useRef<HTMLDivElement | null>(null);
   const hasMountedPageRef = useRef(false);
+  const hasRestoredScrollRef = useRef(false);
 
   const activeCategory = useMemo(() => {
     if (!isValidCategoryId) {
@@ -127,33 +144,37 @@ function CategoryPage() {
   }, [searchParams, setSearchParams]);
 
   const explicitParentCategoryId =
-    typeof routeState.parentCategoryId === "string" && routeState.parentCategoryId.trim() !== ""
-      ? routeState.parentCategoryId
-      : null;
-
+    getOptionalRouteLabel(routeState.parentCategoryId) ?? persistedPageContext?.parentCategoryId ?? null;
   const explicitParentCategoryName =
-    typeof routeState.parentCategoryName === "string" && routeState.parentCategoryName.trim() !== ""
-      ? routeState.parentCategoryName
-      : null;
-
+    getOptionalRouteLabel(routeState.parentCategoryName) ??
+    persistedPageContext?.parentCategoryName ??
+    null;
   const explicitCurrentCategoryName =
-    typeof routeState.currentCategoryName === "string" && routeState.currentCategoryName.trim() !== ""
-      ? routeState.currentCategoryName
-      : null;
-
+    getOptionalRouteLabel(routeState.currentCategoryName) ??
+    persistedPageContext?.currentCategoryName ??
+    null;
   const explicitAncestorCategoryId =
-    typeof routeState.ancestorCategoryId === "string" && routeState.ancestorCategoryId.trim() !== ""
-      ? routeState.ancestorCategoryId
-      : null;
-
+    getOptionalRouteLabel(routeState.ancestorCategoryId) ??
+    persistedPageContext?.ancestorCategoryId ??
+    null;
   const explicitAncestorCategoryName =
-    typeof routeState.ancestorCategoryName === "string" &&
-    routeState.ancestorCategoryName.trim() !== ""
-      ? routeState.ancestorCategoryName
-      : null;
+    getOptionalRouteLabel(routeState.ancestorCategoryName) ??
+    persistedPageContext?.ancestorCategoryName ??
+    null;
+  const backScrollY = getOptionalScrollPosition(routeState.backScrollY);
+  const openedProductId = getOptionalRouteLabel(routeState.openedProductId);
 
-  const resolvedCurrentCategoryName =
-    explicitCurrentCategoryName ?? activeCategory?.name ?? "Категория";
+  const loadedCurrentCategoryName = activeCategory?.name ?? null;
+  const loadedParentCategoryName = parentCategory?.name ?? null;
+
+  const resolvedCurrentCategoryName = resolveCategoryDisplayTitle({
+    explicitTitle: explicitCurrentCategoryName,
+    loadedTitle: loadedCurrentCategoryName,
+    isLoading,
+    fallbackTitle: "Категория",
+  });
+
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
 
   const backPath =
     explicitParentCategoryId
@@ -162,14 +183,30 @@ function CategoryPage() {
         ? `/catalog/category/${parentCategory.id}`
         : "/catalog";
 
-  const backLabel =
-    explicitParentCategoryName === "Каталог"
-      ? "Назад к каталогу"
-      : explicitParentCategoryName
-        ? `Назад к категории «${explicitParentCategoryName}»`
-        : parentCategory
-          ? `Назад к категории «${parentCategory.name}»`
-          : "Назад к каталогу";
+  const backLabel = resolveCatalogBackLabel({
+    explicitParentName: explicitParentCategoryName,
+    loadedParentName: loadedParentCategoryName,
+    isLoading,
+  });
+
+  useEffect(() => {
+    writePersistedCatalogPageContext(categoryId, {
+      currentCategoryName: loadedCurrentCategoryName ?? explicitCurrentCategoryName,
+      parentCategoryId: explicitParentCategoryId,
+      parentCategoryName: loadedParentCategoryName ?? explicitParentCategoryName,
+      ancestorCategoryId: explicitAncestorCategoryId,
+      ancestorCategoryName: explicitAncestorCategoryName,
+    });
+  }, [
+    categoryId,
+    explicitAncestorCategoryId,
+    explicitAncestorCategoryName,
+    explicitCurrentCategoryName,
+    explicitParentCategoryId,
+    explicitParentCategoryName,
+    loadedCurrentCategoryName,
+    loadedParentCategoryName,
+  ]);
 
   useEffect(() => {
     if (!isValidCategoryId) {
@@ -253,6 +290,46 @@ function CategoryPage() {
 
     setSearchParams(nextSearchParams, { replace: true });
   }, [isLoading, pageFromSearchParams, searchParams, setSearchParams, totalPages]);
+
+  useEffect(() => {
+    if (hasRestoredScrollRef.current || isLoading) {
+      return;
+    }
+
+    hasRestoredScrollRef.current = true;
+    const frameId = window.requestAnimationFrame(() => {
+      if (openedProductId) {
+        const productCard = document.querySelector<HTMLElement>(
+          `[data-catalog-product-id="${openedProductId}"]`,
+        );
+
+        if (productCard) {
+          const top =
+            productCard.getBoundingClientRect().top +
+            window.scrollY -
+            getStickyHeaderHeight() -
+            PRODUCT_ROW_TOP_GAP;
+
+          window.scrollTo({
+            top: Math.max(top, 0),
+            behavior: "auto",
+          });
+          return;
+        }
+      }
+
+      if (backScrollY !== null) {
+        window.scrollTo({
+          top: Math.max(backScrollY, 0),
+          behavior: "auto",
+        });
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [backScrollY, isLoading, openedProductId]);
 
   useEffect(() => {
     if (!hasMountedPageRef.current) {
@@ -343,24 +420,28 @@ function CategoryPage() {
     <main className="px-6 py-12 md:px-8 md:py-16">
       <div className="mx-auto max-w-[1240px]">
         <div className="mb-10">
-          <Link
-            to={backPath}
-            state={
-              explicitParentCategoryId
-                ? {
-                    parentCategoryId: explicitAncestorCategoryId,
-                    parentCategoryName: explicitAncestorCategoryName ?? "Каталог",
-                    currentCategoryName: explicitParentCategoryName,
-                    ancestorCategoryId: null,
-                    ancestorCategoryName: null,
-                  }
-                : undefined
-            }
-            className="inline-flex items-center gap-2 text-base font-medium text-[#4A9DD4] transition-colors hover:text-[#2F84BF]"
-          >
-            <span aria-hidden="true">‹</span>
-            {backLabel}
-          </Link>
+          {backLabel ? (
+            <Link
+              to={backPath}
+              state={
+                explicitParentCategoryId
+                  ? {
+                      parentCategoryId: explicitAncestorCategoryId,
+                      parentCategoryName: explicitAncestorCategoryName ?? "Каталог",
+                      currentCategoryName: explicitParentCategoryName,
+                      ancestorCategoryId: null,
+                      ancestorCategoryName: null,
+                    }
+                  : undefined
+              }
+              className="inline-flex items-center gap-2 text-base font-medium text-[#4A9DD4] transition-colors hover:text-[#2F84BF]"
+            >
+              <span aria-hidden="true">‹</span>
+              {backLabel}
+            </Link>
+          ) : (
+            <div className="h-6" aria-hidden="true" />
+          )}
         </div>
 
         <div ref={catalogSectionRef} className="scroll-mt-28">
@@ -377,7 +458,9 @@ function CategoryPage() {
           )}
         </div>
 
-        {isLoading ? <p className="text-base text-[#6B778B]">Загрузка категорий...</p> : null}
+        {isLoading && childCategories.length === 0 ? (
+          <p className="text-base text-[#6B778B]">Загрузка товаров...</p>
+        ) : null}
         {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
 
         {!isLoading && !error && childCategories.length > 0 ? (
@@ -447,7 +530,7 @@ function CategoryPage() {
                       formatTitleSuffix
                       to={`/catalog/product/${product.id}`}
                       state={{
-                        backPath: `/catalog/category/${parsedCategoryId}`,
+                        backPath: currentPath,
                         backLabel: resolvedCurrentCategoryName,
                         backState: {
                           parentCategoryId: explicitParentCategoryId,

@@ -12,12 +12,27 @@ import {
   getNormalizedCatalogSearchParams,
   getCatalogSortOrderParam,
 } from "../utils/catalog-query";
+import {
+  getOptionalRouteLabel,
+  getOptionalScrollPosition,
+  resolveCategoryDisplayTitle,
+} from "../utils/catalog-navigation";
+import {
+  readPersistedCatalogPageContext,
+  writePersistedCatalogPageContext,
+} from "../utils/catalog-page-context";
+import { getStickyHeaderHeight } from "../utils/hash-scroll";
 import { getPlainTextFromHtml } from "../utils/text";
 
 type CategoryProductsRouteState = {
-  parentCategoryId?: string;
-  parentCategoryName?: string;
+  parentCategoryId?: string | null;
+  parentCategoryName?: string | null;
+  currentCategoryName?: string | null;
+  backScrollY?: number | null;
+  openedProductId?: string | null;
 };
+
+const PRODUCT_ROW_TOP_GAP = 16;
 
 function getProductsLabel(count: number): string {
   const lastTwoDigits = count % 100;
@@ -53,15 +68,18 @@ function CategoryProductsPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const routeState = (location.state ?? {}) as CategoryProductsRouteState;
+  const persistedPageContext = readPersistedCatalogPageContext(categoryId);
   const parsedCategoryId = Number(categoryId);
   const isValidCategoryId = Number.isFinite(parsedCategoryId) && parsedCategoryId > 0;
 
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [categories, setCategories] = useState<CatalogCategory[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const catalogSectionRef = useRef<HTMLDivElement | null>(null);
   const hasMountedPageRef = useRef(false);
+  const hasRestoredScrollRef = useRef(false);
 
   const activeCategory = useMemo(() => {
     if (!isValidCategoryId) {
@@ -76,25 +94,67 @@ function CategoryProductsPage() {
       return routeState.parentCategoryId;
     }
 
+    if (persistedPageContext?.parentCategoryId) {
+      return persistedPageContext.parentCategoryId;
+    }
+
     if (activeCategory && activeCategory.parent > 0) {
       return String(activeCategory.parent);
     }
 
     return null;
-  }, [activeCategory, routeState.parentCategoryId]);
+  }, [activeCategory, persistedPageContext?.parentCategoryId, routeState.parentCategoryId]);
 
+  const explicitParentCategoryName =
+    getOptionalRouteLabel(routeState.parentCategoryName) ??
+    persistedPageContext?.parentCategoryName ??
+    null;
+  const explicitCurrentCategoryName =
+    getOptionalRouteLabel(routeState.currentCategoryName) ??
+    persistedPageContext?.currentCategoryName ??
+    null;
   const parentCategoryName = useMemo(() => {
-    if (routeState.parentCategoryName && routeState.parentCategoryName.trim() !== "") {
-      return routeState.parentCategoryName;
+    if (explicitParentCategoryName) {
+      return explicitParentCategoryName;
     }
 
     if (!parentCategoryId) {
-      return "Каталог";
+      return null;
     }
 
     const parentCategory = categories.find((category) => category.id === parentCategoryId);
-    return parentCategory?.name ?? "Категория";
-  }, [categories, parentCategoryId, routeState.parentCategoryName]);
+    return parentCategory?.name ?? null;
+  }, [categories, explicitParentCategoryName, parentCategoryId]);
+  const backScrollY = getOptionalScrollPosition(routeState.backScrollY);
+  const openedProductId = getOptionalRouteLabel(routeState.openedProductId);
+
+  const resolvedCategoryTitle = resolveCategoryDisplayTitle({
+    explicitTitle: explicitCurrentCategoryName,
+    loadedTitle: activeCategory?.name ?? null,
+    isLoading: isCategoriesLoading,
+    fallbackTitle: "Товары категории",
+  });
+  const currentPath = `${location.pathname}${location.search}${location.hash}`;
+  const backLinkLabel = parentCategoryName ?? (isCategoriesLoading ? null : "Каталог");
+
+  useEffect(() => {
+    writePersistedCatalogPageContext(categoryId, {
+      currentCategoryName: activeCategory?.name ?? explicitCurrentCategoryName,
+      parentCategoryId: parentCategoryId ?? persistedPageContext?.parentCategoryId ?? null,
+      parentCategoryName: parentCategoryName ?? null,
+      ancestorCategoryId: persistedPageContext?.ancestorCategoryId ?? null,
+      ancestorCategoryName: persistedPageContext?.ancestorCategoryName ?? null,
+    });
+  }, [
+    activeCategory?.name,
+    categoryId,
+    explicitCurrentCategoryName,
+    parentCategoryId,
+    parentCategoryName,
+    persistedPageContext?.ancestorCategoryId,
+    persistedPageContext?.ancestorCategoryName,
+    persistedPageContext?.parentCategoryId,
+  ]);
 
   const sortOrder = useMemo(() => getCatalogSortOrderParam(searchParams), [searchParams]);
   const minPrice = useMemo(() => getCatalogPriceParam(searchParams, "minPrice"), [searchParams]);
@@ -134,47 +194,66 @@ function CategoryProductsPage() {
   useEffect(() => {
     if (!isValidCategoryId) {
       setError("Некорректный идентификатор категории.");
-      setIsLoading(false);
+      setIsProductsLoading(false);
+      setIsCategoriesLoading(false);
       return;
     }
 
     let isMounted = true;
 
-    async function loadData() {
-      setIsLoading(true);
+    async function loadProducts() {
+      setIsProductsLoading(true);
       setError(null);
 
       try {
-        const [loadedProducts, loadedCategories] = await Promise.all([
-          getCatalogProductsByCategory(parsedCategoryId),
-          getCatalogCategories(),
-        ]);
+        const loadedProducts = await getCatalogProductsByCategory(parsedCategoryId);
 
         if (isMounted) {
           setProducts(loadedProducts);
-          setCategories(loadedCategories);
-
-          const hasSelectedCategory = loadedCategories.some(
-            (category) => category.id === String(parsedCategoryId),
-          );
-          if (!hasSelectedCategory) {
-            setError("Категория не найдена.");
-          }
         }
       } catch (loadError) {
-        console.error("[CategoryProductsPage] Failed to load data", loadError);
+        console.error("[CategoryProductsPage] Failed to load products", loadError);
 
         if (isMounted) {
           setError(getErrorMessage(loadError));
         }
       } finally {
         if (isMounted) {
-          setIsLoading(false);
+          setIsProductsLoading(false);
         }
       }
     }
 
-    void loadData();
+    async function loadCategories() {
+      setIsCategoriesLoading(true);
+
+      try {
+        const loadedCategories = await getCatalogCategories();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setCategories(loadedCategories);
+
+        const hasSelectedCategory = loadedCategories.some(
+          (category) => category.id === String(parsedCategoryId),
+        );
+
+        if (!hasSelectedCategory) {
+          setError("Категория не найдена.");
+        }
+      } catch (loadError) {
+        console.error("[CategoryProductsPage] Failed to load categories", loadError);
+      } finally {
+        if (isMounted) {
+          setIsCategoriesLoading(false);
+        }
+      }
+    }
+
+    void loadProducts();
+    void loadCategories();
 
     return () => {
       isMounted = false;
@@ -182,7 +261,7 @@ function CategoryProductsPage() {
   }, [isValidCategoryId, parsedCategoryId]);
 
   useEffect(() => {
-    if (isLoading) {
+    if (isProductsLoading) {
       return;
     }
 
@@ -199,7 +278,47 @@ function CategoryProductsPage() {
     }
 
     setSearchParams(nextSearchParams, { replace: true });
-  }, [isLoading, pageFromSearchParams, searchParams, setSearchParams, totalPages]);
+  }, [isProductsLoading, pageFromSearchParams, searchParams, setSearchParams, totalPages]);
+
+  useEffect(() => {
+    if (hasRestoredScrollRef.current || isProductsLoading) {
+      return;
+    }
+
+    hasRestoredScrollRef.current = true;
+    const frameId = window.requestAnimationFrame(() => {
+      if (openedProductId) {
+        const productCard = document.querySelector<HTMLElement>(
+          `[data-catalog-product-id="${openedProductId}"]`,
+        );
+
+        if (productCard) {
+          const top =
+            productCard.getBoundingClientRect().top +
+            window.scrollY -
+            getStickyHeaderHeight() -
+            PRODUCT_ROW_TOP_GAP;
+
+          window.scrollTo({
+            top: Math.max(top, 0),
+            behavior: "auto",
+          });
+          return;
+        }
+      }
+
+      if (backScrollY !== null) {
+        window.scrollTo({
+          top: Math.max(backScrollY, 0),
+          behavior: "auto",
+        });
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [backScrollY, isProductsLoading, openedProductId]);
 
   useEffect(() => {
     if (!hasMountedPageRef.current) {
@@ -290,17 +409,21 @@ function CategoryProductsPage() {
     <main className="px-4 py-10">
       <div className="mx-auto max-w-[1240px]">
         <div className="mb-6">
-          <Link
-            to={parentCategoryId ? `/catalog/category/${parentCategoryId}` : "/catalog"}
-            className="text-sm text-slate-700 hover:text-slate-900"
-          >
-            ← {parentCategoryId ? parentCategoryName : "Каталог"}
-          </Link>
+          {backLinkLabel ? (
+            <Link
+              to={parentCategoryId ? `/catalog/category/${parentCategoryId}` : "/catalog"}
+              className="text-sm text-slate-700 hover:text-slate-900"
+            >
+              ← {backLinkLabel}
+            </Link>
+          ) : (
+            <div className="h-5" aria-hidden="true" />
+          )}
         </div>
 
         <div ref={catalogSectionRef} className="min-w-0 scroll-mt-28">
           <h1 className="text-2xl font-semibold text-[#234579]">
-            {activeCategory?.name ?? "Товары категории"}
+            {resolvedCategoryTitle}
           </h1>
           {categoryDescription ? (
             <p className="mt-2 max-w-[720px] text-base leading-snug text-[#6B778B]">
@@ -309,7 +432,7 @@ function CategoryProductsPage() {
           ) : null}
         </div>
 
-        {!isLoading && !error && products.length > 0 ? (
+        {!isProductsLoading && !error && products.length > 0 ? (
           <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0 flex-1">
               <ProductGridControls
@@ -328,14 +451,14 @@ function CategoryProductsPage() {
           </div>
         ) : null}
 
-        {isLoading ? <p className="mt-6">Загрузка товаров...</p> : null}
+        {isProductsLoading ? <p className="mt-6">Загрузка товаров...</p> : null}
         {error ? <p className="mt-6">{error}</p> : null}
 
-        {!isLoading && !error && products.length === 0 ? (
+        {!isProductsLoading && !error && products.length === 0 ? (
           <p className="mt-6">В этой подкатегории пока нет товаров.</p>
         ) : null}
 
-        {!isLoading && !error && products.length > 0 ? (
+        {!isProductsLoading && !error && products.length > 0 ? (
           <>
             {visibleProducts.length === 0 ? (
               <p className="mt-8 text-base leading-snug text-[#6B778B]">
@@ -351,8 +474,12 @@ function CategoryProductsPage() {
                       formatTitleSuffix
                       to={`/catalog/product/${product.id}`}
                       state={{
-                        backPath: `/catalog/category/${categoryId}/products`,
-                        backLabel: activeCategory?.name ?? "Товары категории",
+                        backPath: currentPath,
+                        backLabel: resolvedCategoryTitle,
+                        backState: {
+                          parentCategoryId,
+                          parentCategoryName,
+                        },
                         categoryId,
                       }}
                     />
