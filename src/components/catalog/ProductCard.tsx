@@ -81,7 +81,7 @@ export default function ProductCard({
         </div>
 
         <div className="flex flex-1 flex-col">
-          <h2 className="mb-3 line-clamp-2 text-base font-medium leading-snug text-[#3F4A58] md:text-lg">
+          <h2 className="mb-3 min-h-[2.5rem] line-clamp-2 text-[15px] font-medium leading-[1.2] text-[#3F4A58] md:min-h-[2.9rem] md:text-base">
             <span>{mainTitle}</span>
             {suffixPart ? <span className="block">{suffixPart}</span> : null}
           </h2>
