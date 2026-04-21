@@ -49,6 +49,7 @@ export default function FavoritesPage() {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  formatTitleSuffix
                   to={`/catalog/product/${product.id}`}
                   state={{ backPath: "/favorites", backLabel: "Избранное" }}
                 />

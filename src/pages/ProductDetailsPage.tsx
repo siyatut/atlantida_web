@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import FavoriteToggleButton from "../components/catalog/FavoriteToggleButton";
 import { getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
+import { getCatalogCardTitleParts } from "../utils/catalog-title";
 import { formatCatalogProductPrice } from "../utils/price";
 import { sanitizeWooHtml } from "../utils/sanitize-html";
 
@@ -99,6 +100,14 @@ function ProductDetailsPage() {
     return sanitizeWooHtml(product.shortDescription ?? product.description);
   }, [product]);
 
+  const titleParts = useMemo(() => {
+    if (!product) {
+      return null;
+    }
+
+    return getCatalogCardTitleParts(product);
+  }, [product]);
+
   const explicitBackPath =
     typeof routeState.backPath === "string" && routeState.backPath.trim() !== ""
       ? routeState.backPath
@@ -171,7 +180,8 @@ function ProductDetailsPage() {
                 <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <h1 className="text-3xl font-semibold leading-snug text-[#234579]">
-                      {product.title}
+                      <span>{titleParts?.mainTitle ?? product.title}</span>
+                      {titleParts?.suffixPart ? <span className="block">{titleParts.suffixPart}</span> : null}
                     </h1>
 
                     <p className="mt-4 text-xl font-medium leading-snug text-[#4BADE8]">
