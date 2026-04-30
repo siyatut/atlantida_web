@@ -1,4 +1,44 @@
-# React + TypeScript + Vite
+# Atlantida Web
+
+## Local Setup
+
+Run Strapi locally in the admin project:
+
+```bash
+cd ../atlantida_admin
+npm run develop
+```
+
+Run the React frontend:
+
+```bash
+cd ../atlantida_web
+npm run dev
+```
+
+Switch the catalog data source in `.env.local`:
+
+```env
+VITE_CATALOG_SOURCE=strapi
+VITE_STRAPI_API_URL=http://localhost:1337
+```
+
+Supported `VITE_CATALOG_SOURCE` values:
+
+- `woocommerce`
+- `strapi`
+
+If `VITE_CATALOG_SOURCE` is omitted, the frontend keeps using WooCommerce by default.
+
+`VITE_STRAPI_API_URL` defaults to `http://localhost:1337` for local development.
+
+## Notes
+
+- WooCommerce remains the default and fallback catalog integration.
+- Strapi catalog requests use `/api/categories?populate=*` and `/api/products?populate=*`-style endpoints.
+- Relative Strapi media URLs are automatically prefixed with `VITE_STRAPI_API_URL`.
+
+## Vite Template
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
