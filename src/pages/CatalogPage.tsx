@@ -616,8 +616,8 @@ export default function CatalogPage() {
   return (
     <main className="px-6 py-12 pb-20 md:px-8 md:py-16 md:pb-24">
       <div className="mx-auto max-w-[1240px]">
-        <div className="mb-10">
-          {backLabel ? (
+        {backLabel ? (
+          <div className="mb-10">
             <Link
               to={backPath}
               state={
@@ -636,10 +636,8 @@ export default function CatalogPage() {
               <span aria-hidden="true">‹</span>
               {backLabel}
             </Link>
-          ) : (
-            <div className="h-6" aria-hidden="true" />
-          )}
-        </div>
+          </div>
+        ) : null}
 
         <section className={CATALOG_CONTENT_MIN_HEIGHT}>
           <div>
