@@ -3,7 +3,12 @@ import { Link, useLocation, useParams, useSearchParams } from "react-router-dom"
 import ProductGridControls from "../components/catalog/ProductGridControls";
 import ProductGridPagination from "../components/catalog/ProductGridPagination";
 import ProductCard from "../components/catalog/ProductCard";
-import { getCatalogCategories, getCatalogProductsByCategory } from "../services/catalog.service";
+import {
+  getCachedCatalogCategories,
+  getCachedCatalogProductsByCategory,
+  getCatalogCategories,
+  getCatalogProductsByCategory,
+} from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
 import { getFilteredAndSortedProducts, sanitizePriceInput } from "../utils/catalog-product-list";
 import {
@@ -76,29 +81,34 @@ function CategoryPage() {
   const parsedCategoryId = Number(categoryId);
   const isValidCategoryId = Number.isFinite(parsedCategoryId) && parsedCategoryId > 0;
 
-  const [categories, setCategories] = useState<CatalogCategory[]>([]);
-  const [products, setProducts] = useState<CatalogProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<CatalogCategory[]>(() => getCachedCatalogCategories() ?? []);
+  const [resolvedCategoryId, setResolvedCategoryId] = useState<number | null>(null);
+  const [resolvedProducts, setResolvedProducts] = useState<CatalogProduct[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(categories.length === 0);
+  const [isGridLoading, setIsGridLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const catalogSectionRef = useRef<HTMLDivElement | null>(null);
   const hasMountedPageRef = useRef(false);
   const hasRestoredScrollRef = useRef(false);
+  const lastResolvedCategoryIdRef = useRef<number | null>(null);
+
+  const activeCategoryId = resolvedCategoryId ?? parsedCategoryId;
 
   const activeCategory = useMemo(() => {
-    if (!isValidCategoryId) {
+    if (!Number.isFinite(activeCategoryId) || activeCategoryId <= 0) {
       return null;
     }
 
-    return categories.find((category) => category.id === String(parsedCategoryId)) ?? null;
-  }, [categories, isValidCategoryId, parsedCategoryId]);
+    return categories.find((category) => category.id === String(activeCategoryId)) ?? null;
+  }, [activeCategoryId, categories]);
 
   const childCategories = useMemo(() => {
-    if (!isValidCategoryId) {
+    if (!Number.isFinite(activeCategoryId) || activeCategoryId <= 0) {
       return [];
     }
 
-    return categories.filter((category) => category.parent === parsedCategoryId);
-  }, [categories, isValidCategoryId, parsedCategoryId]);
+    return categories.filter((category) => category.parent === activeCategoryId);
+  }, [activeCategoryId, categories]);
 
   const parentCategory = useMemo(() => {
     if (!activeCategory || activeCategory.parent === 0) {
@@ -113,8 +123,8 @@ function CategoryPage() {
   const maxPrice = useMemo(() => getCatalogPriceParam(searchParams, "maxPrice"), [searchParams]);
 
   const visibleProducts = useMemo(() => {
-    return getFilteredAndSortedProducts(products, minPrice, maxPrice, sortOrder);
-  }, [maxPrice, minPrice, products, sortOrder]);
+    return getFilteredAndSortedProducts(resolvedProducts, minPrice, maxPrice, sortOrder);
+  }, [maxPrice, minPrice, resolvedProducts, sortOrder]);
 
   const categoryDescription = useMemo(() => {
     return getPlainTextFromHtml(activeCategory?.description ?? null);
@@ -166,6 +176,8 @@ function CategoryPage() {
 
   const loadedCurrentCategoryName = activeCategory?.name ?? null;
   const loadedParentCategoryName = parentCategory?.name ?? null;
+  const isContentResolvedForCurrentRoute = resolvedCategoryId === parsedCategoryId;
+  const isLoading = isInitialLoading || isGridLoading;
 
   const resolvedCurrentCategoryName = resolveCategoryDisplayTitle({
     explicitTitle: explicitCurrentCategoryName,
@@ -209,18 +221,13 @@ function CategoryPage() {
   ]);
 
   useEffect(() => {
-    if (!isValidCategoryId) {
-      setError("Некорректный идентификатор категории.");
-      setIsLoading(false);
-      return;
-    }
-
     let isMounted = true;
 
-    async function loadCategoryData() {
-      setIsLoading(true);
-      setError(null);
-      setProducts([]);
+    async function loadCategories() {
+      if (categories.length > 0) {
+        setIsInitialLoading(false);
+        return;
+      }
 
       try {
         const loadedCategories = await getCatalogCategories();
@@ -230,46 +237,112 @@ function CategoryPage() {
         }
 
         setCategories(loadedCategories);
-
-        const selectedCategory = loadedCategories.find(
-          (category) => category.id === String(parsedCategoryId),
-        );
-
-        if (!selectedCategory) {
-          setError("Категория не найдена.");
-          return;
-        }
-
-        const selectedCategoryChildren = loadedCategories.filter(
-          (category) => category.parent === parsedCategoryId,
-        );
-
-        if (selectedCategoryChildren.length === 0) {
-          const loadedProducts = await getCatalogProductsByCategory(parsedCategoryId);
-
-          if (isMounted) {
-            setProducts(loadedProducts);
-          }
-        }
       } catch (loadError) {
-        console.error("[CategoryPage] Failed to load category data", loadError);
+        console.error("[CategoryPage] Failed to load categories", loadError);
 
         if (isMounted) {
           setError(getErrorMessage(loadError));
         }
       } finally {
         if (isMounted) {
-          setIsLoading(false);
+          setIsInitialLoading(false);
         }
       }
     }
 
-    void loadCategoryData();
+    void loadCategories();
 
     return () => {
       isMounted = false;
     };
-  }, [isValidCategoryId, parsedCategoryId]);
+  }, [categories.length]);
+
+  useEffect(() => {
+    if (isInitialLoading) {
+      return;
+    }
+
+    if (!isValidCategoryId) {
+      setResolvedCategoryId(null);
+      setResolvedProducts([]);
+      setError("Некорректный идентификатор категории.");
+      setIsGridLoading(false);
+      return;
+    }
+
+    const selectedCategory = categories.find((category) => category.id === String(parsedCategoryId));
+
+    if (!selectedCategory) {
+      setResolvedCategoryId(null);
+      setResolvedProducts([]);
+      setError("Категория не найдена.");
+      setIsGridLoading(false);
+      return;
+    }
+
+    const selectedCategoryChildren = categories.filter((category) => category.parent === parsedCategoryId);
+
+    if (selectedCategoryChildren.length > 0) {
+      setResolvedCategoryId(parsedCategoryId);
+      setResolvedProducts([]);
+      setError(null);
+      setIsGridLoading(false);
+      lastResolvedCategoryIdRef.current = parsedCategoryId;
+      return;
+    }
+
+    const cachedProducts = getCachedCatalogProductsByCategory(parsedCategoryId);
+
+    if (cachedProducts) {
+      setResolvedCategoryId(parsedCategoryId);
+      setResolvedProducts(cachedProducts);
+      setError(null);
+      setIsGridLoading(false);
+      lastResolvedCategoryIdRef.current = parsedCategoryId;
+      return;
+    }
+
+    let isMounted = true;
+    const shouldKeepCurrentContent = lastResolvedCategoryIdRef.current !== null;
+
+    if (!shouldKeepCurrentContent) {
+      setResolvedCategoryId(parsedCategoryId);
+      setResolvedProducts([]);
+    }
+
+    setError(null);
+    setIsGridLoading(true);
+
+    async function loadProducts() {
+      try {
+        const loadedProducts = await getCatalogProductsByCategory(parsedCategoryId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setResolvedCategoryId(parsedCategoryId);
+        setResolvedProducts(loadedProducts);
+        lastResolvedCategoryIdRef.current = parsedCategoryId;
+      } catch (loadError) {
+        console.error("[CategoryPage] Failed to load category products", loadError);
+
+        if (isMounted) {
+          setError(getErrorMessage(loadError));
+        }
+      } finally {
+        if (isMounted) {
+          setIsGridLoading(false);
+        }
+      }
+    }
+
+    void loadProducts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [categories, isInitialLoading, isValidCategoryId, parsedCategoryId]);
 
   useEffect(() => {
     if (isLoading) {
@@ -458,46 +531,58 @@ function CategoryPage() {
           )}
         </div>
 
-        {isLoading && childCategories.length === 0 ? (
-          <p className="text-base text-[#6B778B]">Загрузка товаров...</p>
-        ) : null}
+        {isInitialLoading ? <p className="text-base text-[#6B778B]">Загрузка товаров...</p> : null}
         {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
 
-        {!isLoading && !error && childCategories.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {childCategories.map((category) => (
-              <Link
-                to={`/catalog/category/${category.id}`}
-                key={category.id}
-                state={{
-                  parentCategoryId: String(parsedCategoryId),
-                  parentCategoryName: resolvedCurrentCategoryName,
-                  currentCategoryName: category.name,
-                  ancestorCategoryId: explicitParentCategoryId,
-                  ancestorCategoryName: explicitParentCategoryName,
-                }}
-              >
-                <article className="flex h-[132px] items-center justify-between rounded-[24px] border border-[#D4DFEA] bg-[#F8FAFC] px-5 transition-colors hover:bg-white">
-                  <div className="min-w-0">
-                    <h2 className="mb-1.5 text-lg font-semibold leading-snug text-[#394452]">
-                      {category.name}
-                    </h2>
-                    <p className="text-[13px] leading-snug text-[#79869A]">
-                      {typeof category.count === "number" ? `${category.count} товаров` : "—"}
-                    </p>
-                  </div>
-                  <span className="ml-3 text-[28px] font-light text-[#A9DCEB]">›</span>
-                </article>
-              </Link>
-            ))}
+        {!isInitialLoading && !error && childCategories.length > 0 ? (
+          <div className="relative">
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {childCategories.map((category) => (
+                <Link
+                  to={`/catalog/category/${category.id}`}
+                  key={category.id}
+                  state={{
+                    parentCategoryId: String(activeCategoryId),
+                    parentCategoryName: resolvedCurrentCategoryName,
+                    currentCategoryName: category.name,
+                    ancestorCategoryId: explicitParentCategoryId,
+                    ancestorCategoryName: explicitParentCategoryName,
+                  }}
+                >
+                  <article className="flex h-[132px] items-center justify-between rounded-[24px] border border-[#D4DFEA] bg-[#F8FAFC] px-5 transition-colors hover:bg-white">
+                    <div className="min-w-0">
+                      <h2 className="mb-1.5 text-lg font-semibold leading-snug text-[#394452]">
+                        {category.name}
+                      </h2>
+                      <p className="text-[13px] leading-snug text-[#79869A]">
+                        {typeof category.count === "number" ? `${category.count} товаров` : "—"}
+                      </p>
+                    </div>
+                    <span className="ml-3 text-[28px] font-light text-[#A9DCEB]">›</span>
+                  </article>
+                </Link>
+              ))}
+            </div>
+            {isGridLoading ? (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[24px] bg-[#E7F5FB]/70 backdrop-blur-[1px]">
+                <div className="rounded-full border border-[#BCE1F1] bg-white/90 px-4 py-2 text-sm font-medium text-[#4A9DD4]">
+                  Загрузка...
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
-        {!isLoading && !error && childCategories.length === 0 && products.length === 0 ? (
+        {!isInitialLoading &&
+        !error &&
+        childCategories.length === 0 &&
+        isContentResolvedForCurrentRoute &&
+        resolvedProducts.length === 0 &&
+        !isGridLoading ? (
           <p className="text-base text-[#6B778B]">В этой категории пока нет товаров.</p>
         ) : null}
 
-        {!isLoading && !error && childCategories.length === 0 && products.length > 0 ? (
+        {!isInitialLoading && !error && childCategories.length === 0 && resolvedProducts.length > 0 ? (
           <>
             <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0 flex-1">
@@ -522,27 +607,40 @@ function CategoryPage() {
               </p>
             ) : (
               <>
-                <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                  {paginatedProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      formatTitleSuffix
-                      to={`/catalog/product/${product.id}`}
-                      state={{
-                        backPath: currentPath,
-                        backLabel: resolvedCurrentCategoryName,
-                        backState: {
-                          parentCategoryId: explicitParentCategoryId,
-                          parentCategoryName: explicitParentCategoryName,
-                          currentCategoryName: resolvedCurrentCategoryName,
-                          ancestorCategoryId: explicitAncestorCategoryId,
-                          ancestorCategoryName: explicitAncestorCategoryName,
-                        },
-                        categoryId: String(parsedCategoryId),
-                      }}
-                    />
-                  ))}
+                <div className="relative mt-8">
+                  <div
+                    className={`grid grid-cols-1 gap-6 transition-opacity duration-200 sm:grid-cols-2 lg:grid-cols-4 ${
+                      isGridLoading ? "pointer-events-none opacity-70" : ""
+                    }`}
+                  >
+                    {paginatedProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        formatTitleSuffix
+                        to={`/catalog/product/${product.id}`}
+                        state={{
+                          backPath: currentPath,
+                          backLabel: resolvedCurrentCategoryName,
+                          backState: {
+                            parentCategoryId: explicitParentCategoryId,
+                            parentCategoryName: explicitParentCategoryName,
+                            currentCategoryName: resolvedCurrentCategoryName,
+                            ancestorCategoryId: explicitAncestorCategoryId,
+                            ancestorCategoryName: explicitAncestorCategoryName,
+                          },
+                          categoryId: String(activeCategoryId),
+                        }}
+                      />
+                    ))}
+                  </div>
+                  {isGridLoading ? (
+                    <div className="absolute inset-0 z-10 flex items-start justify-center rounded-[24px] bg-[#E7F5FB]/35 pt-6">
+                      <div className="rounded-full border border-[#BCE1F1] bg-white/92 px-4 py-2 text-sm font-medium text-[#4A9DD4] shadow-sm">
+                        Обновляем каталог...
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
                 <ProductGridPagination
                   currentPage={currentPage}
@@ -552,6 +650,21 @@ function CategoryPage() {
               </>
             )}
           </>
+        ) : null}
+
+        {!isInitialLoading &&
+        !error &&
+        childCategories.length === 0 &&
+        resolvedProducts.length === 0 &&
+        isGridLoading ? (
+          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4" aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="h-[320px] animate-pulse rounded-[24px] border border-[#D4DFEA] bg-[#F8FAFC]"
+              />
+            ))}
+          </div>
         ) : null}
       </div>
     </main>

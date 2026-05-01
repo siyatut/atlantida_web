@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getCatalogCategories } from "../../services/catalog.service";
+import { getCachedCatalogCategories, getCatalogCategories } from "../../services/catalog.service";
 import type { CatalogCategory } from "../../types/catalog";
 import HomeHashLink from "../navigation/HomeHashLink";
 
@@ -42,13 +42,17 @@ function FooterLink({ item }: { item: FooterNavItem }) {
   );
 }
 
-export default function Footer() {
-  const [categories, setCategories] = useState<CatalogCategory[]>([]);
+function Footer() {
+  const [categories, setCategories] = useState<CatalogCategory[]>(() => getCachedCatalogCategories() ?? []);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadCategories() {
+      if (categories.length > 0) {
+        return;
+      }
+
       try {
         const data = await getCatalogCategories();
 
@@ -65,7 +69,7 @@ export default function Footer() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [categories.length]);
 
   const footerCatalogLinks = useMemo(() => {
     return categories
@@ -179,3 +183,5 @@ export default function Footer() {
     </footer>
   );
 }
+
+export default memo(Footer);
