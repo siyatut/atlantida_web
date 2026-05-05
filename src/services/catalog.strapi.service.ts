@@ -24,10 +24,6 @@ type StrapiListResponse<T> = {
   };
 };
 
-type StrapiSingleResponse<T> = {
-  data?: T | null;
-};
-
 type NormalizedPriceSet = {
   price: string | null;
   regularPrice: string | null;
@@ -48,14 +44,12 @@ const STRAPI_PRODUCTS_PATH = "/api/products";
 const STRAPI_SUBCATEGORY_POPULATE_QUERY: Record<string, StrapiQueryValue> = {
   "populate[mainCategory]": true,
   "populate[parent]": true,
-  "populate[children]": true,
 };
+
 const STRAPI_PRODUCT_POPULATE_QUERY: Record<string, StrapiQueryValue> = {
-  "populate[categories]": true,
+  "populate[subcategories]": true,
+  "populate[mainCategory]": true,
   "populate[images]": true,
-  "populate[image]": true,
-  "populate[cover]": true,
-  "populate[thumbnail]": true,
 };
 
 class StrapiRequestError extends Error {
@@ -143,6 +137,13 @@ function getRelationEntity(value: unknown): StrapiEntity | null {
 function getRelationId(value: unknown): number | null {
   const entityId = getEntityId(getRelationEntity(value));
   return typeof entityId === "number" ? entityId : entityId ? Number(entityId) : null;
+}
+
+function getRelationIds(value: unknown): number[] {
+  return getRelationEntities(value)
+    .map((entity) => getEntityId(entity))
+    .map((id) => (typeof id === "number" ? id : id ? Number(id) : null))
+    .filter((id): id is number => id !== null);
 }
 
 function stripHtmlTags(value: string): string {
@@ -279,7 +280,7 @@ function getCategoryImage(record: Record<string, unknown>): string | null {
   return imageUrls[0] ?? null;
 }
 
-function mapStrapiMainCategory(rawCategory: unknown, childCount: number): CatalogCategory | null {
+function mapStrapiMainCategory(rawCategory: unknown, productCount: number): CatalogCategory | null {
   const record = getEntityRecord(rawCategory);
   const categoryId = getEntityId(rawCategory);
   const categoryName = record ? getCategoryName(record) : null;
@@ -295,13 +296,13 @@ function mapStrapiMainCategory(rawCategory: unknown, childCount: number): Catalo
     name: decodeHtmlEntities(categoryName),
     slug: categorySlug,
     description: getString(record.description),
-    count: childCount,
+    count: productCount,
     parent: 0,
     image: getCategoryImage(record),
   };
 }
 
-function mapStrapiSubcategory(rawCategory: unknown): CatalogCategory | null {
+function mapStrapiSubcategory(rawCategory: unknown, productCount: number): CatalogCategory | null {
   const record = getEntityRecord(rawCategory);
   const categoryId = getEntityId(rawCategory);
   const categoryName = record ? getCategoryName(record) : null;
@@ -324,7 +325,7 @@ function mapStrapiSubcategory(rawCategory: unknown): CatalogCategory | null {
     name: decodeHtmlEntities(categoryName),
     slug: categorySlug,
     description: getString(record.description),
-    count: null,
+    count: productCount,
     parent: resolvedParentId,
     image: getCategoryImage(record),
   };
@@ -370,6 +371,118 @@ function buildTopLevelSubcategoryCounts(rawSubcategories: StrapiEntity[]): Map<s
   return counts;
 }
 
+function buildDescendantSubcategoryIdsByParent(rawSubcategories: StrapiEntity[]): Map<number, number[]> {
+  const childrenByParentId = new Map<number, number[]>();
+
+  for (const rawSubcategory of rawSubcategories) {
+    const record = getEntityRecord(rawSubcategory);
+    const subcategoryId = getEntityId(rawSubcategory);
+    const parentId = record ? getRelationId(record.parent) : null;
+
+    if (subcategoryId === null || parentId === null) {
+      continue;
+    }
+
+    const normalizedSubcategoryId =
+      typeof subcategoryId === "number" ? subcategoryId : Number(subcategoryId);
+
+    if (!Number.isFinite(normalizedSubcategoryId)) {
+      continue;
+    }
+
+    const children = childrenByParentId.get(parentId) ?? [];
+    children.push(normalizedSubcategoryId);
+    childrenByParentId.set(parentId, children);
+  }
+
+  const cache = new Map<number, number[]>();
+
+  function collect(parentId: number, visited: Set<number>): number[] {
+    if (cache.has(parentId)) {
+      return cache.get(parentId) ?? [];
+    }
+
+    if (visited.has(parentId)) {
+      return [];
+    }
+
+    visited.add(parentId);
+    const descendants = new Set<number>();
+
+    for (const childId of childrenByParentId.get(parentId) ?? []) {
+      descendants.add(childId);
+
+      for (const nestedChildId of collect(childId, visited)) {
+        descendants.add(nestedChildId);
+      }
+    }
+
+    visited.delete(parentId);
+    const resolvedDescendants = Array.from(descendants);
+    cache.set(parentId, resolvedDescendants);
+    return resolvedDescendants;
+  }
+
+  for (const parentId of childrenByParentId.keys()) {
+    collect(parentId, new Set<number>());
+  }
+
+  return cache;
+}
+
+function buildProductCountsByCategory(
+  rawProducts: StrapiEntity[],
+  rawSubcategories: StrapiEntity[],
+): {
+  mainCategoryCounts: Map<number, number>;
+  subcategoryCounts: Map<number, number>;
+} {
+  const mainCategoryCounts = new Map<number, number>();
+  const directSubcategoryCounts = new Map<number, number>();
+  const descendantSubcategoryIdsByParent = buildDescendantSubcategoryIdsByParent(rawSubcategories);
+
+  for (const rawProduct of rawProducts) {
+    const record = getEntityRecord(rawProduct);
+
+    if (!record) {
+      continue;
+    }
+
+    const mainCategoryId = getRelationId(record.mainCategory);
+
+    if (mainCategoryId !== null) {
+      mainCategoryCounts.set(mainCategoryId, (mainCategoryCounts.get(mainCategoryId) ?? 0) + 1);
+    }
+
+    for (const subcategoryId of getRelationIds(record.subcategories)) {
+      directSubcategoryCounts.set(subcategoryId, (directSubcategoryCounts.get(subcategoryId) ?? 0) + 1);
+    }
+  }
+
+  const subcategoryCounts = new Map<number, number>();
+  const subcategoryIds = new Set<number>([
+    ...rawSubcategories
+      .map((subcategory) => getEntityId(subcategory))
+      .map((id) => (typeof id === "number" ? id : id ? Number(id) : null))
+      .filter((id): id is number => id !== null),
+  ]);
+
+  for (const subcategoryId of subcategoryIds) {
+    let totalCount = directSubcategoryCounts.get(subcategoryId) ?? 0;
+
+    for (const descendantId of descendantSubcategoryIdsByParent.get(subcategoryId) ?? []) {
+      totalCount += directSubcategoryCounts.get(descendantId) ?? 0;
+    }
+
+    subcategoryCounts.set(subcategoryId, totalCount);
+  }
+
+  return {
+    mainCategoryCounts,
+    subcategoryCounts,
+  };
+}
+
 function mapStrapiProduct(rawProduct: unknown): CatalogProduct | null {
   const record = getEntityRecord(rawProduct);
   const productId = getEntityId(rawProduct);
@@ -378,12 +491,11 @@ function mapStrapiProduct(rawProduct: unknown): CatalogProduct | null {
     return null;
   }
 
-  const categories = getRelationEntities(record.categories)
+  const subcategories = getRelationEntities(record.subcategories)
     .map(getCategorySummary)
     .filter((category): category is CatalogProductCategory => category !== null);
-  const imageUrls = extractMediaUrls(
-    record.images ?? record.image ?? record.cover ?? record.thumbnail ?? null,
-  );
+  const mainCategory = getCategorySummary(record.mainCategory);
+  const imageUrls = extractMediaUrls(record.images ?? null);
   const normalizedPrices = normalizePriceSet(record);
   const rawDescription = getString(record.description);
   const rawShortDescription =
@@ -422,14 +534,33 @@ function mapStrapiProduct(rawProduct: unknown): CatalogProduct | null {
     priceCurrencyMinorUnit: normalizedPrices.minorUnit,
     priceCurrencyPrefix,
     priceCurrencySuffix,
-    category: categories[0]?.slug ?? null,
-    categories,
+    category: subcategories[0]?.slug ?? mainCategory?.slug ?? null,
+    categories: subcategories,
     image: imageUrls[0] ?? null,
     images: imageUrls,
     shortDescription: normalizedShortDescription,
     description: rawDescription ?? rawShortDescription,
     permalink: getString(record.permalink) ?? null,
   };
+}
+
+function productMatchesCategory(rawProduct: unknown, categoryId: number): boolean {
+  const record = getEntityRecord(rawProduct);
+
+  if (!record) {
+    return false;
+  }
+
+  const subcategoryIds = getRelationEntities(record.subcategories)
+    .map((subcategory) => getEntityId(subcategory))
+    .map((id) => (typeof id === "number" ? id : id ? Number(id) : null))
+    .filter((id): id is number => id !== null);
+
+  if (subcategoryIds.includes(categoryId)) {
+    return true;
+  }
+
+  return getRelationId(record.mainCategory) === categoryId;
 }
 
 function buildStrapiQuery(query?: Record<string, StrapiQueryValue>): string {
@@ -558,33 +689,62 @@ async function fetchAllStrapiCollection<T extends StrapiEntity>(
   );
 }
 
-async function fetchStrapiProducts(): Promise<CatalogProduct[]> {
-  const rawProducts = await fetchAllStrapiCollection<StrapiEntity>(
-    STRAPI_PRODUCTS_PATH,
-    STRAPI_PRODUCT_POPULATE_QUERY,
-  );
+async function fetchRawStrapiProducts(
+  query?: Record<string, StrapiQueryValue>,
+): Promise<StrapiEntity[]> {
+  return fetchAllStrapiCollection<StrapiEntity>(STRAPI_PRODUCTS_PATH, {
+    ...STRAPI_PRODUCT_POPULATE_QUERY,
+    ...query,
+  });
+}
+
+async function fetchStrapiProducts(categoryId?: number): Promise<CatalogProduct[]> {
+  const rawProducts = await fetchRawStrapiProducts();
 
   return rawProducts
+    .filter((rawProduct) =>
+      typeof categoryId === "number" ? productMatchesCategory(rawProduct, categoryId) : true,
+    )
     .map(mapStrapiProduct)
     .filter((product): product is CatalogProduct => product !== null);
 }
 
 async function fetchStrapiCategories(): Promise<CatalogCategory[]> {
-  const [rawMainCategories, rawSubcategories] = await Promise.all([
+  const [rawMainCategories, rawSubcategories, rawProducts] = await Promise.all([
     fetchAllStrapiCollection<StrapiEntity>(STRAPI_MAIN_CATEGORIES_PATH),
     fetchAllStrapiCollection<StrapiEntity>(STRAPI_SUBCATEGORIES_PATH, {
       ...STRAPI_SUBCATEGORY_POPULATE_QUERY,
       "pagination[pageSize]": 100,
     }),
+    fetchRawStrapiProducts(),
   ]);
   const topLevelSubcategoryCounts = buildTopLevelSubcategoryCounts(rawSubcategories);
+  const productCounts = buildProductCountsByCategory(rawProducts, rawSubcategories);
   const mainCategories = sortCategoriesByOrder(rawMainCategories)
-    .map((category) =>
-      mapStrapiMainCategory(category, topLevelSubcategoryCounts.get(String(getEntityId(category))) ?? 0),
-    )
+    .map((category) => {
+      const categoryId = getEntityId(category);
+      const normalizedCategoryId =
+        typeof categoryId === "number" ? categoryId : categoryId ? Number(categoryId) : null;
+
+      return mapStrapiMainCategory(
+        category,
+        normalizedCategoryId !== null
+          ? productCounts.mainCategoryCounts.get(normalizedCategoryId) ?? 0
+          : topLevelSubcategoryCounts.get(String(getEntityId(category))) ?? 0,
+      );
+    })
     .filter((category): category is CatalogCategory => category !== null);
   const subcategories = sortCategoriesByOrder(rawSubcategories)
-    .map(mapStrapiSubcategory)
+    .map((category) => {
+      const categoryId = getEntityId(category);
+      const normalizedCategoryId =
+        typeof categoryId === "number" ? categoryId : categoryId ? Number(categoryId) : null;
+
+      return mapStrapiSubcategory(
+        category,
+        normalizedCategoryId !== null ? productCounts.subcategoryCounts.get(normalizedCategoryId) ?? 0 : 0,
+      );
+    })
     .filter((category): category is CatalogCategory => category !== null);
 
   return mainCategories.concat(subcategories);
@@ -595,16 +755,12 @@ export async function getCatalogCategories(): Promise<CatalogCategory[]> {
 }
 
 export async function getCatalogProductsByCategory(categoryId: number): Promise<CatalogProduct[]> {
-  const products = await fetchStrapiProducts();
-
-  return products.filter((product) =>
-    product.categories.some((category) => Number(category.id) === categoryId),
-  );
+  return fetchStrapiProducts(categoryId);
 }
 
 export async function getCatalogProducts(categoryId?: number): Promise<CatalogProduct[]> {
   if (typeof categoryId === "number") {
-    return getCatalogProductsByCategory(categoryId);
+    return fetchStrapiProducts(categoryId);
   }
 
   return fetchStrapiProducts();
@@ -612,18 +768,17 @@ export async function getCatalogProducts(categoryId?: number): Promise<CatalogPr
 
 export async function getCatalogProductById(productId: number): Promise<CatalogProduct | null> {
   try {
-    const response = await fetchStrapi<StrapiSingleResponse<StrapiEntity>>(
-      `${STRAPI_PRODUCTS_PATH}/${productId}`,
-      {
-        ...STRAPI_PRODUCT_POPULATE_QUERY,
-      },
-    );
+    const response = await fetchStrapi<StrapiListResponse<StrapiEntity>>(STRAPI_PRODUCTS_PATH, {
+      ...STRAPI_PRODUCT_POPULATE_QUERY,
+      "filters[id][$eq]": productId,
+    });
+    const rawProduct = Array.isArray(response.data) ? response.data[0] ?? null : null;
 
-    if (!response.data) {
+    if (!rawProduct) {
       return null;
     }
 
-    return mapStrapiProduct(response.data);
+    return mapStrapiProduct(rawProduct);
   } catch (error) {
     if (error instanceof StrapiRequestError && error.status === 404) {
       return null;

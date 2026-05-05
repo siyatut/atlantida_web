@@ -1,6 +1,7 @@
 import type { MouseEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { CatalogProduct } from "../../types/catalog";
+import { getCatalogProductImageSrc } from "../../utils/catalog-image";
 import { getCatalogCardTitleParts } from "../../utils/catalog-title";
 import { formatCatalogProductPrice } from "../../utils/price";
 import FavoriteToggleButton from "./FavoriteToggleButton";
@@ -32,6 +33,7 @@ export default function ProductCard({
   const { mainTitle, suffixPart } = formatTitleSuffix
     ? getCatalogCardTitleParts(product)
     : { mainTitle: product.title, suffixPart: null };
+  const imageSrc = getCatalogProductImageSrc(product);
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     if (
@@ -66,18 +68,12 @@ export default function ProductCard({
         <div className="relative mb-4 flex h-[220px] w-full items-center justify-center rounded-[18px] border border-[#E1E8EF] bg-white p-4">
           <FavoriteToggleButton product={product} variant="icon" />
 
-          {product.image ? (
-            <img
-              src={product.image}
-              alt={product.title}
-              className="max-h-full max-w-full object-contain"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-sm text-[#8C97A8]">
-              Изображение недоступно
-            </div>
-          )}
+          <img
+            src={imageSrc}
+            alt={product.title}
+            className="max-h-full max-w-full object-contain"
+            loading="lazy"
+          />
         </div>
 
         <div className="flex flex-1 flex-col">

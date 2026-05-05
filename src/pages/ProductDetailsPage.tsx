@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import FavoriteToggleButton from "../components/catalog/FavoriteToggleButton";
 import { getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
+import { getCatalogProductImageSrc } from "../utils/catalog-image";
 import { getCatalogCardTitleParts } from "../utils/catalog-title";
 import { formatCatalogProductPrice } from "../utils/price";
 import { sanitizeWooHtml } from "../utils/sanitize-html";
@@ -30,6 +31,10 @@ function getErrorMessage(error: unknown): string {
   }
 
   return "Не удалось загрузить товар.";
+}
+
+function hasHtmlMarkup(value: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(value);
 }
 
 function ProductDetailsPage() {
@@ -92,13 +97,25 @@ function ProductDetailsPage() {
     };
   }, [isValidProductId, parsedProductId]);
 
-  const descriptionHtml = useMemo(() => {
+  const descriptionContent = useMemo(() => {
     if (!product) {
       return null;
     }
 
-    return sanitizeWooHtml(product.shortDescription ?? product.description);
+    return product.description ?? product.shortDescription ?? null;
   }, [product]);
+
+  const descriptionHasHtml = useMemo(() => {
+    return descriptionContent ? hasHtmlMarkup(descriptionContent) : false;
+  }, [descriptionContent]);
+
+  const descriptionHtml = useMemo(() => {
+    if (!descriptionContent || !descriptionHasHtml) {
+      return null;
+    }
+
+    return sanitizeWooHtml(descriptionContent);
+  }, [descriptionContent, descriptionHasHtml]);
 
   const titleParts = useMemo(() => {
     if (!product) {
@@ -106,6 +123,10 @@ function ProductDetailsPage() {
     }
 
     return getCatalogCardTitleParts(product);
+  }, [product]);
+
+  const imageSrc = useMemo(() => {
+    return product ? getCatalogProductImageSrc(product) : null;
   }, [product]);
 
   const explicitBackPath =
@@ -161,9 +182,9 @@ function ProductDetailsPage() {
             <div className="grid items-start gap-10 lg:grid-cols-[minmax(320px,460px)_1fr]">
               <div>
                 <div className="flex h-[420px] w-full items-center justify-center rounded-[24px] border border-[#DCE4EB] bg-white p-6 md:h-[560px] md:p-8">
-                  {product.image ? (
+                  {imageSrc ? (
                     <img
-                      src={product.image}
+                      src={imageSrc}
                       alt={product.title}
                       className="max-h-full max-w-full object-contain"
                       loading="lazy"
@@ -192,13 +213,19 @@ function ProductDetailsPage() {
                   <FavoriteToggleButton product={product} />
                 </div>
 
-                {descriptionHtml ? (
+                {descriptionContent ? (
                   <div className="mb-7 rounded-3xl bg-[#E2F2FA] p-6 md:p-8">
                     <h2 className="mb-3 text-xl font-medium leading-snug text-[#364250]">Описание</h2>
-                    <div
-                      className="max-w-none text-sm leading-7 text-[#647387] md:text-base [&_p]:mb-3 [&_p:last-child]:mb-0 [&_br]:hidden [&_ul]:my-3 [&_ol]:my-3 [&_li]:mb-1"
-                      dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                    />
+                    {descriptionHtml ? (
+                      <div
+                        className="max-w-none text-sm leading-7 text-[#647387] md:text-base [&_p]:my-3 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0 [&_ul]:my-4 [&_ol]:my-4 [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:pl-5 [&_ol]:pl-5 [&_li]:mb-1 [&_a]:font-medium [&_a]:text-[#2F84BF] [&_a]:underline [&_a]:underline-offset-2"
+                        dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                      />
+                    ) : (
+                      <div className="whitespace-pre-line text-sm leading-7 text-[#647387] md:text-base">
+                        {descriptionContent}
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </div>
