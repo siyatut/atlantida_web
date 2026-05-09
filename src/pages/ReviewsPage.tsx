@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-
-type PublishedReview = {
-  name: string;
-  createdAt: string;
-  rating: number;
-  message: string;
-};
+import { getPublishedReviews, submitReview, type PublishedReview } from "../services/reviews.service";
 
 type ReviewFormValues = {
   name: string;
@@ -19,45 +13,6 @@ type ReviewFormErrors = {
   rating: string;
   message: string;
 };
-
-type PendingReview = {
-  name: string;
-  message: string;
-  rating: number;
-  createdAt: string;
-  status: "pending";
-};
-
-const REVIEWS: PublishedReview[] = [
-  {
-    name: "Елена",
-    createdAt: "12 марта 2026",
-    rating: 5,
-    message:
-      "Помогли подобрать аквариум и всё оборудование к нему. Очень спокойно объяснили, что действительно нужно, а без чего можно обойтись.",
-  },
-  {
-    name: "Игорь",
-    createdAt: "4 марта 2026",
-    rating: 5,
-    message:
-      "Покупаем здесь корма и товары для ухода уже не первый год. Удобно, что можно найти всё в одном месте.",
-  },
-  {
-    name: "Анна",
-    createdAt: "21 февраля 2026",
-    rating: 4,
-    message:
-      "Подсказали подходящий корм и аксессуары для кошки. Остались довольны и ассортиментом, и отношением.",
-  },
-  {
-    name: "Елена",
-    createdAt: "12 марта 2026",
-    rating: 5,
-    message:
-      "Помогли подобрать аквариум и всё оборудование к нему. Очень спокойно объяснили, что действительно нужно, а без чего можно обойтись.",
-  },
-];
 
 const INITIAL_FORM_VALUES: ReviewFormValues = {
   name: "",
@@ -124,6 +79,8 @@ function RatingStars({
 
 export default function ReviewsPage() {
   const formRef = useRef<HTMLFormElement>(null);
+  const [reviews, setReviews] = useState<PublishedReview[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
   const [formValues, setFormValues] = useState<ReviewFormValues>(INITIAL_FORM_VALUES);
   const [touchedFields, setTouchedFields] = useState<Record<keyof ReviewFormValues, boolean>>({
     name: false,
@@ -131,9 +88,19 @@ export default function ReviewsPage() {
     message: false,
   });
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLoadingText, setShowLoadingText] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
 
   const formErrors = getReviewFormErrors(formValues);
+
+  useEffect(() => {
+    getPublishedReviews()
+      .then(setReviews)
+      .catch((error) => console.error("[Reviews] Failed to load:", error))
+      .finally(() => setIsLoadingReviews(false));
+  }, []);
 
   useEffect(() => {
     if (!submitSuccess) {
@@ -191,7 +158,7 @@ export default function ReviewsPage() {
     }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setHasSubmitted(true);
 
@@ -210,24 +177,30 @@ export default function ReviewsPage() {
       return;
     }
 
-    const pendingReview: PendingReview = {
-      name: formValues.name.trim(),
-      message: formValues.message.trim(),
-      rating: formValues.rating,
-      createdAt: new Date().toISOString(),
-      status: "pending",
-    };
+    setIsSubmitting(true);
+    setSubmitError(false);
 
-    console.info("Pending review payload:", pendingReview);
+    const loadingTimer = window.setTimeout(() => setShowLoadingText(true), 300);
 
-    setFormValues(INITIAL_FORM_VALUES);
-    setTouchedFields({
-      name: false,
-      rating: false,
-      message: false,
-    });
-    setHasSubmitted(false);
-    setSubmitSuccess(true);
+    try {
+      await submitReview({
+        name: formValues.name.trim(),
+        rating: formValues.rating,
+        message: formValues.message.trim(),
+      });
+
+      setFormValues(INITIAL_FORM_VALUES);
+      setTouchedFields({ name: false, rating: false, message: false });
+      setHasSubmitted(false);
+      setSubmitSuccess(true);
+    } catch (error) {
+      console.error("[Reviews] Submit failed:", error);
+      setSubmitError(true);
+    } finally {
+      window.clearTimeout(loadingTimer);
+      setShowLoadingText(false);
+      setIsSubmitting(false);
+    }
   }
 
   const showNameError = (touchedFields.name || hasSubmitted) && !!formErrors.name;
@@ -243,25 +216,31 @@ export default function ReviewsPage() {
         </p>
 
         <div className="mt-10 flex gap-6 overflow-x-auto pb-4">
-          {REVIEWS.map((review) => (
-            <article
-              key={`${review.name}-${review.createdAt}`}
-              className="min-w-[320px] shrink-0 rounded-[24px] border border-[#BCE1F1] bg-[#F6FBFE] p-6 xl:min-w-[calc((100%-3rem)/3)] xl:max-w-[calc((100%-3rem)/3)]"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold leading-snug text-[#394452]">
-                    {review.name}
-                  </h2>
-                  <p className="mt-1 text-sm leading-6 text-[#8A97AA]">{review.createdAt}</p>
+          {isLoadingReviews ? (
+            <p className="text-base leading-7 text-[#9AA7BA]">Загружаем отзывы…</p>
+          ) : reviews.length === 0 ? (
+            <p className="text-base leading-7 text-[#9AA7BA]">Отзывов пока нет. Будьте первым!</p>
+          ) : (
+            reviews.map((review) => (
+              <article
+                key={review.id}
+                className="min-w-[320px] shrink-0 rounded-[24px] border border-[#BCE1F1] bg-[#F6FBFE] p-6 xl:min-w-[calc((100%-3rem)/3)] xl:max-w-[calc((100%-3rem)/3)]"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-semibold leading-snug text-[#394452]">
+                      {review.name}
+                    </h2>
+                    <p className="mt-1 text-sm leading-6 text-[#8A97AA]">{review.createdAt}</p>
+                  </div>
+                  <div className="shrink-0">
+                    <RatingStars rating={review.rating} />
+                  </div>
                 </div>
-                <div className="shrink-0">
-                  <RatingStars rating={review.rating} />
-                </div>
-              </div>
-              <p className="mt-5 text-base leading-7 text-[#6B778B]">{review.message}</p>
-            </article>
-          ))}
+                <p className="mt-5 text-base leading-7 text-[#6B778B]">{review.message}</p>
+              </article>
+            ))
+          )}
         </div>
 
         <section className="mt-14 rounded-[28px] border border-[#BCE1F1] bg-[#F6FBFE] p-6 shadow-[0_10px_24px_rgba(36,73,124,0.05)] md:p-7">
@@ -348,13 +327,19 @@ export default function ReviewsPage() {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
               <button
                 type="submit"
-                className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(47,132,191,0.2)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#256EAC] hover:shadow-[0_14px_28px_rgba(37,110,172,0.24)]"
+                disabled={isSubmitting}
+                className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(47,132,191,0.2)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#256EAC] hover:shadow-[0_14px_28px_rgba(37,110,172,0.24)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
               >
-                Отправить отзыв
+                {showLoadingText ? "Отправляем…" : "Отправить отзыв"}
               </button>
               {submitSuccess ? (
                 <span className="text-sm leading-6 text-[#5F8F74]">
                   Получили ваш отзыв. Спасибо за оценку!
+                </span>
+              ) : null}
+              {submitError ? (
+                <span className="text-sm leading-6 text-[#C96565]">
+                  Не удалось отправить. Попробуйте ещё раз.
                 </span>
               ) : null}
             </div>
