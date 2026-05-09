@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import type { CatalogProduct } from "../../types/catalog";
 import { getCatalogProductImageSrc } from "../../utils/catalog-image";
 import { getCatalogCardTitleParts } from "../../utils/catalog-title";
-import { formatCatalogProductPrice } from "../../utils/price";
+import { formatCatalogProductPrice, getCatalogProductNumericPrice } from "../../utils/price";
 import FavoriteToggleButton from "./FavoriteToggleButton";
 
 type ProductCardProps = {
@@ -81,9 +81,19 @@ export default function ProductCard({
             <span>{mainTitle}</span>
             {suffixPart ? <span className="block">{suffixPart}</span> : null}
           </h2>
-          <p className="mt-auto text-xl font-medium leading-snug text-[#4BADE8]">
-            {formatCatalogProductPrice(product)}
-          </p>
+          {(() => {
+            const numericPrice = getCatalogProductNumericPrice(product);
+            const isPriceUnknown = numericPrice === null || numericPrice === 0;
+            return isPriceUnknown ? (
+              <p className="mt-auto text-base font-medium leading-snug text-[#4A9DD4]">
+                Уточнить цену
+              </p>
+            ) : (
+              <p className="mt-auto text-xl font-medium leading-snug text-[#4BADE8]">
+                {formatCatalogProductPrice(product)}
+              </p>
+            );
+          })()}
         </div>
       </article>
     </Link>

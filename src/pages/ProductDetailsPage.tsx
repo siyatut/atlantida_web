@@ -3,9 +3,10 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import FavoriteToggleButton from "../components/catalog/FavoriteToggleButton";
 import { getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
+import HomeHashLink from "../components/navigation/HomeHashLink";
 import { getCatalogProductImageSrc } from "../utils/catalog-image";
 import { getCatalogCardTitleParts } from "../utils/catalog-title";
-import { formatCatalogProductPrice } from "../utils/price";
+import { formatCatalogProductPrice, getCatalogProductNumericPrice } from "../utils/price";
 import { sanitizeWooHtml } from "../utils/sanitize-html";
 
 type ProductRouteState = {
@@ -129,6 +130,12 @@ function ProductDetailsPage() {
     return product ? getCatalogProductImageSrc(product) : null;
   }, [product]);
 
+  const isPriceUnknown = useMemo(() => {
+    if (!product) return false;
+    const numericPrice = getCatalogProductNumericPrice(product);
+    return numericPrice === null || numericPrice === 0;
+  }, [product]);
+
   const explicitBackPath =
     typeof routeState.backPath === "string" && routeState.backPath.trim() !== ""
       ? routeState.backPath
@@ -205,12 +212,23 @@ function ProductDetailsPage() {
                       {titleParts?.suffixPart ? <span className="block">{titleParts.suffixPart}</span> : null}
                     </h1>
 
-                    <p className="mt-4 text-xl font-medium leading-snug text-[#4BADE8]">
-                      {formatCatalogProductPrice(product)}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-[#234579]">
-                      Наличие уточняйте в магазине
-                    </p>
+                    {isPriceUnknown ? (
+                      <HomeHashLink
+                        hash="#contacts"
+                        className="mt-4 inline-flex items-center gap-1 text-base font-medium text-[#4A9DD4] transition-colors hover:text-[#2F84BF]"
+                      >
+                        Уточнить цену в магазине <span aria-hidden="true">›</span>
+                      </HomeHashLink>
+                    ) : (
+                      <>
+                        <p className="mt-4 text-xl font-medium leading-snug text-[#4BADE8]">
+                          {formatCatalogProductPrice(product)}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-[#234579]">
+                          Наличие уточняйте в магазине
+                        </p>
+                      </>
+                    )}
                   </div>
 
                   <FavoriteToggleButton product={product} />
