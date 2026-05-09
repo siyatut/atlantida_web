@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import CatIcon from "../assets/icons_category/cat.svg?react";
 import FishIcon from "../assets/icons_category/fish.svg?react";
 import HomeHashLink from "../components/navigation/HomeHashLink";
+import { sendContactMessage } from "../services/contact.service";
 
 type AboutHighlight = {
   title: string;
@@ -223,6 +224,9 @@ export default function HomePage() {
   const [formValues, setFormValues] = useState<ContactFormValues>(INITIAL_CONTACT_FORM);
   const [touchedFields, setTouchedFields] = useState<ContactFormTouched>(INITIAL_TOUCHED);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLoadingText, setShowLoadingText] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const formErrors = getContactFormErrors(formValues);
@@ -288,7 +292,7 @@ export default function HomePage() {
     }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setHasSubmitted(true);
 
@@ -308,10 +312,31 @@ export default function HomePage() {
       return;
     }
 
-    setFormValues(INITIAL_CONTACT_FORM);
-    setTouchedFields(INITIAL_TOUCHED);
-    setHasSubmitted(false);
-    setSubmitSuccess(true);
+    setIsSubmitting(true);
+    setSubmitError(false);
+
+    const loadingTimer = window.setTimeout(() => setShowLoadingText(true), 300);
+
+    try {
+      await sendContactMessage({
+        name: formValues.name.trim(),
+        phone: formValues.phone,
+        email: formValues.email.trim(),
+        message: formValues.message.trim(),
+      });
+
+      setFormValues(INITIAL_CONTACT_FORM);
+      setTouchedFields(INITIAL_TOUCHED);
+      setHasSubmitted(false);
+      setSubmitSuccess(true);
+    } catch (error) {
+      console.error("[Contact] Submit failed:", error);
+      setSubmitError(true);
+    } finally {
+      window.clearTimeout(loadingTimer);
+      setShowLoadingText(false);
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -553,13 +578,19 @@ export default function HomePage() {
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(47,132,191,0.2)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#256EAC] hover:shadow-[0_14px_28px_rgba(37,110,172,0.24)]"
+                    disabled={isSubmitting}
+                    className="inline-flex items-center justify-center rounded-2xl bg-[#2F84BF] px-6 py-3.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(47,132,191,0.2)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#256EAC] hover:shadow-[0_14px_28px_rgba(37,110,172,0.24)] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
                   >
-                    Отправить сообщение
+                    {showLoadingText ? "Отправляем…" : "Отправить сообщение"}
                   </button>
                     {submitSuccess ? (
                       <span className="text-sm leading-6 text-[#5F8F74]">
                         Сообщение успешно отправлено. Ожидайте ответ, пожалуйста!
+                      </span>
+                    ) : null}
+                    {submitError ? (
+                      <span className="text-sm leading-6 text-[#C96565]">
+                        Не удалось отправить. Попробуйте ещё раз.
                       </span>
                     ) : null}
                   </div>
