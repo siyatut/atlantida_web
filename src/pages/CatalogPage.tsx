@@ -138,13 +138,6 @@ function getProductsLabel(count: number): string {
   return "товаров";
 }
 
-function GridLoadingBadge({ label }: { label: string }) {
-  return (
-    <div className="rounded-full border border-[#BCE1F1] bg-white/92 px-4 py-2 text-sm font-medium text-[#4A9DD4] shadow-sm">
-      {label}
-    </div>
-  );
-}
 
 export default function CatalogPage() {
   const location = useLocation();
@@ -160,13 +153,45 @@ export default function CatalogPage() {
   const isValidCategoryId = !isCategoryRoute || (Number.isFinite(parsedCategoryId) && parsedCategoryId > 0);
 
   const [categories, setCategories] = useState<CatalogCategory[]>(() => getCachedCatalogCategories() ?? []);
-  const [resolvedCategoryId, setResolvedCategoryId] = useState<number | null>(null);
-  const [resolvedProducts, setResolvedProducts] = useState<CatalogProduct[]>([]);
+  const [resolvedCategoryId, setResolvedCategoryId] = useState<number | null>(() => {
+    if (!isCategoryRoute || !Number.isFinite(parsedCategoryId) || parsedCategoryId <= 0) return null;
+    const initialCategories = getCachedCatalogCategories() ?? [];
+    if (initialCategories.some((c) => c.parent === parsedCategoryId)) return parsedCategoryId;
+    if (getCachedCatalogProductsByCategory(parsedCategoryId) !== null) return parsedCategoryId;
+    return null;
+  });
+  const [resolvedProducts, setResolvedProducts] = useState<CatalogProduct[]>(() => {
+    if (!isCategoryRoute || !Number.isFinite(parsedCategoryId) || parsedCategoryId <= 0) return [];
+    const initialCategories = getCachedCatalogCategories() ?? [];
+    if (initialCategories.some((c) => c.parent === parsedCategoryId)) return [];
+    return getCachedCatalogProductsByCategory(parsedCategoryId) ?? [];
+  });
   const [isInitialLoading, setIsInitialLoading] = useState(categories.length === 0);
   const [isGridLoading, setIsGridLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const hasRestoredScrollRef = useRef(false);
   const lastResolvedCategoryIdRef = useRef<number | null>(null);
+
+  // Sync state immediately when URL changes within the mounted catalog component.
+  // Called during render so React discards the stale frame and re-renders synchronously.
+  if (!isInitialLoading) {
+    if (isCategoryRoute && isValidCategoryId && resolvedCategoryId !== parsedCategoryId) {
+      const hasChildren = categories.some((c) => c.parent === parsedCategoryId);
+      if (hasChildren) {
+        setResolvedCategoryId(parsedCategoryId);
+        if (resolvedProducts.length > 0) setResolvedProducts([]);
+      } else {
+        const cached = getCachedCatalogProductsByCategory(parsedCategoryId);
+        if (cached !== null) {
+          setResolvedCategoryId(parsedCategoryId);
+          setResolvedProducts(cached);
+        }
+      }
+    } else if (!isCategoryRoute && resolvedCategoryId !== null) {
+      setResolvedCategoryId(null);
+      if (resolvedProducts.length > 0) setResolvedProducts([]);
+    }
+  }
 
   const currentCategoryId = isCategoryRoute ? parsedCategoryId : null;
   const displayedCategoryId = resolvedCategoryId ?? currentCategoryId;
@@ -649,7 +674,7 @@ export default function CatalogPage() {
             )}
           </div>
 
-          {isInitialLoading ? <p className="text-base text-[#6B778B]">Загрузка категорий...</p> : null}
+          {isInitialLoading ? <div className="absolute inset-0 z-10 bg-[#E7F5FB]/35" /> : null}
           {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
 
           {!isInitialLoading && !error && !isCategoryRoute ? (
@@ -697,9 +722,7 @@ export default function CatalogPage() {
                 })}
               </div>
               {isGridLoading ? (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[24px] bg-[#E7F5FB]/35">
-                  <GridLoadingBadge label="Обновляем каталог..." />
-                </div>
+                <div className="absolute inset-0 z-10 rounded-[24px] bg-[#E7F5FB]/35" />
               ) : null}
             </div>
           ) : null}
@@ -734,9 +757,7 @@ export default function CatalogPage() {
                 ))}
               </div>
               {isGridLoading ? (
-                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[24px] bg-[#E7F5FB]/35">
-                  <GridLoadingBadge label="Загрузка..." />
-                </div>
+                <div className="absolute inset-0 z-10 rounded-[24px] bg-[#E7F5FB]/35" />
               ) : null}
             </div>
           ) : null}
@@ -808,9 +829,7 @@ export default function CatalogPage() {
                       ))}
                     </div>
                     {isGridLoading ? (
-                      <div className="absolute inset-0 z-10 flex items-start justify-center rounded-[24px] bg-[#E7F5FB]/35 pt-6">
-                        <GridLoadingBadge label="Обновляем каталог..." />
-                      </div>
+                      <div className="absolute inset-0 z-10 rounded-[24px] bg-[#E7F5FB]/35" />
                     ) : null}
                   </div>
                   <ProductGridPagination

@@ -2,4 +2,9 @@
 
 body {
   margin: 0;
+  background-color: #E7F5FB;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(6px); }
 }

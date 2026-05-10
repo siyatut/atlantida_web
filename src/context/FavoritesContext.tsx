@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { warmCatalogProductCache } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
 
 const FAVORITES_STORAGE_KEY = "atlantida.favorite-products";
@@ -45,9 +46,11 @@ function readFavoritesFromStorage(): CatalogProduct[] {
 }
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favoriteProducts, setFavoriteProducts] = useState<CatalogProduct[]>(() =>
-    readFavoritesFromStorage(),
-  );
+  const [favoriteProducts, setFavoriteProducts] = useState<CatalogProduct[]>(() => {
+    const products = readFavoritesFromStorage();
+    warmCatalogProductCache(products);
+    return products;
+  });
 
   useEffect(() => {
     try {

@@ -1,9 +1,17 @@
+import type { MouseEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import webLogo from "../../assets/web_logo.png";
 import HomeHashLink from "../navigation/HomeHashLink";
 
 export default function Header() {
   const location = useLocation();
+
+  function handleHomeClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (location.pathname === "/") {
+      event.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }
 
   function getLinkClassName(isActive: boolean): string {
     return `text-base font-medium leading-none transition-colors hover:text-[#4BADE8] ${
@@ -32,7 +40,7 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          <Link to="/" className={getLinkClassName(location.pathname === "/" && location.hash === "")}>
+          <Link to="/" onClick={handleHomeClick} className={getLinkClassName(location.pathname === "/" && location.hash === "")}>
             Главная
           </Link>
           <Link to="/catalog" className={getLinkClassName(location.pathname.startsWith("/catalog"))}>

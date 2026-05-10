@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import FavoriteToggleButton from "../components/catalog/FavoriteToggleButton";
-import { getCatalogProductById } from "../services/catalog.service";
+import { getCachedCatalogProductById, getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
 import HomeHashLink from "../components/navigation/HomeHashLink";
 import { getCatalogProductImageSrc } from "../utils/catalog-image";
@@ -47,8 +47,12 @@ function ProductDetailsPage() {
   const parsedProductId = Number(productId);
   const isValidProductId = Number.isFinite(parsedProductId) && parsedProductId > 0;
 
-  const [product, setProduct] = useState<CatalogProduct | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [product, setProduct] = useState<CatalogProduct | null>(() =>
+    isValidProductId ? getCachedCatalogProductById(parsedProductId) : null,
+  );
+  const [isLoading, setIsLoading] = useState(
+    () => isValidProductId && getCachedCatalogProductById(parsedProductId) === null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,8 +65,11 @@ function ProductDetailsPage() {
     let isMounted = true;
 
     async function loadProduct() {
-      setIsLoading(true);
-      setError(null);
+      const hasCached = getCachedCatalogProductById(parsedProductId) !== null;
+      if (!hasCached) {
+        setIsLoading(true);
+        setError(null);
+      }
 
       try {
         const loadedProduct = await getCatalogProductById(parsedProductId);
@@ -181,7 +188,6 @@ function ProductDetailsPage() {
           </button>
         </div>
 
-        {isLoading ? <p className="text-base text-[#6B778B]">Загрузка товара...</p> : null}
         {error ? <p className="text-base text-[#8E4C4C]">{error}</p> : null}
 
         {!isLoading && !error && product ? (

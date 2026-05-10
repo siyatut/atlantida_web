@@ -19,6 +19,13 @@ let cachedCategories: CatalogCategory[] | null = null;
 let categoriesPromise: Promise<CatalogCategory[]> | null = null;
 const cachedProductsByCategory = new Map<number, CatalogProduct[]>();
 const productsByCategoryPromises = new Map<number, Promise<CatalogProduct[]>>();
+const cachedProductsById = new Map<string, CatalogProduct>();
+
+export function warmCatalogProductCache(products: CatalogProduct[]): void {
+  for (const product of products) {
+    cachedProductsById.set(product.id, product);
+  }
+}
 
 export async function getCatalogProducts(categoryId?: number): Promise<CatalogProduct[]> {
   if (catalogSource === "strapi") {
@@ -128,7 +135,22 @@ export async function getCatalogProductsByCategoryFresh(categoryId: number): Pro
   return products;
 }
 
+export function getCachedCatalogProductById(productId: number): CatalogProduct | null {
+  const idStr = String(productId);
+  for (const products of cachedProductsByCategory.values()) {
+    const cached = products.find((p) => p.id === idStr);
+    if (cached) return cached;
+  }
+  return cachedProductsById.get(idStr) ?? null;
+}
+
 export async function getCatalogProductById(productId: number): Promise<CatalogProduct | null> {
+  const idStr = String(productId);
+  for (const products of cachedProductsByCategory.values()) {
+    const cached = products.find((p) => p.id === idStr);
+    if (cached) return cached;
+  }
+
   if (catalogSource === "strapi") {
     return getStrapiCatalogProductById(productId);
   }

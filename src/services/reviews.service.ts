@@ -41,7 +41,23 @@ export async function submitReview(payload: ReviewPayload): Promise<void> {
   }
 }
 
+let cachedReviews: PublishedReview[] | null = null;
+let reviewsPromise: Promise<PublishedReview[]> | null = null;
+
 export async function getPublishedReviews(): Promise<PublishedReview[]> {
+  if (cachedReviews) return cachedReviews;
+  if (reviewsPromise) return reviewsPromise;
+
+  reviewsPromise = fetchPublishedReviews().then((reviews) => {
+    cachedReviews = reviews;
+    reviewsPromise = null;
+    return reviews;
+  });
+
+  return reviewsPromise;
+}
+
+async function fetchPublishedReviews(): Promise<PublishedReview[]> {
   const response = await fetch(
     `${strapiApiUrl}/api/reviews?sort=publishedAt:desc&pagination[pageSize]=20`,
     { headers: { Accept: "application/json" } },
