@@ -22,8 +22,8 @@ import {
   resolveCatalogBackLabel,
   resolveCategoryDisplayTitle,
   getOptionalRouteLabel,
-  getOptionalScrollPosition,
 } from "../utils/catalog-navigation";
+import { clearCatalogScrollTarget, readCatalogScrollTarget, saveCatalogScrollTarget } from "../utils/catalog-scroll";
 import {
   getCatalogPageParam,
   getCatalogPriceParam,
@@ -169,7 +169,6 @@ export default function CatalogPage() {
   const [isInitialLoading, setIsInitialLoading] = useState(categories.length === 0);
   const [isGridLoading, setIsGridLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const hasRestoredScrollRef = useRef(false);
   const lastResolvedCategoryIdRef = useRef<number | null>(null);
 
   // Sync state immediately when URL changes within the mounted catalog component.
@@ -276,8 +275,6 @@ export default function CatalogPage() {
     getOptionalRouteLabel(routeState.ancestorCategoryName) ??
     persistedPageContext?.ancestorCategoryName ??
     null;
-  const backScrollY = getOptionalScrollPosition(routeState.backScrollY);
-  const openedProductId = getOptionalRouteLabel(routeState.openedProductId);
 
   const isLoading = isInitialLoading || isGridLoading;
   const isRootView = displayedCategoryId === null;
@@ -508,45 +505,35 @@ export default function CatalogPage() {
     setSearchParams(nextSearchParams, { replace: true });
   }, [isLoading, pageFromSearchParams, searchParams, setSearchParams, totalPages]);
 
+  // On mount only: restore scroll to the product card the user came from.
+  // Read without deleting so StrictMode's double-invoke doesn't consume the entry before rAF fires.
+  // The entry is cleared inside the rAF callback, after the scroll succeeds.
   useEffect(() => {
-    if (hasRestoredScrollRef.current || isLoading) {
-      return;
-    }
+    const targetProductId = readCatalogScrollTarget(window.location.pathname);
+    if (!targetProductId) return;
 
-    hasRestoredScrollRef.current = true;
     const frameId = window.requestAnimationFrame(() => {
-      if (openedProductId) {
-        const productCard = document.querySelector<HTMLElement>(
-          `[data-catalog-product-id="${openedProductId}"]`,
-        );
+      const productCard = document.querySelector<HTMLElement>(
+        `[data-catalog-product-id="${targetProductId}"]`,
+      );
+      if (!productCard) return;
 
-        if (productCard) {
-          const top =
-            productCard.getBoundingClientRect().top +
-            window.scrollY -
-            getStickyHeaderHeight() -
-            PRODUCT_ROW_TOP_GAP;
+      clearCatalogScrollTarget();
 
-          window.scrollTo({
-            top: Math.max(top, 0),
-            behavior: "auto",
-          });
-          return;
-        }
-      }
+      const top =
+        productCard.getBoundingClientRect().top +
+        window.scrollY -
+        getStickyHeaderHeight() -
+        PRODUCT_ROW_TOP_GAP;
 
-      if (backScrollY !== null) {
-        window.scrollTo({
-          top: Math.max(backScrollY, 0),
-          behavior: "auto",
-        });
-      }
+      window.scrollTo({ top: Math.max(top, 0), behavior: "auto" });
     });
 
     return () => {
       window.cancelAnimationFrame(frameId);
     };
-  }, [backScrollY, isLoading, openedProductId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (isCategoryRoute || isInitialLoading) {
@@ -636,6 +623,8 @@ export default function CatalogPage() {
       },
       false,
     );
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
@@ -806,6 +795,13 @@ export default function CatalogPage() {
                       className={`grid grid-cols-1 gap-6 transition-opacity duration-200 sm:grid-cols-2 lg:grid-cols-4 ${
                         isGridLoading ? "pointer-events-none opacity-70" : ""
                       }`}
+                      onClickCapture={(event) => {
+                        const link = (event.target as Element).closest("a[href]");
+                        if (!link) return;
+                        const card = (event.target as Element).closest("[data-catalog-product-id]");
+                        const productId = card?.getAttribute("data-catalog-product-id");
+                        if (productId) saveCatalogScrollTarget(location.pathname, productId);
+                      }}
                     >
                       {paginatedProducts.map((product) => (
                         <ProductCard

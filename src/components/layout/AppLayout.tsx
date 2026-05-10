@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Footer from "./Footer";
 import Header from "./Header";
 import { isHomeHashLink, scrollToHashTarget } from "../../utils/hash-scroll";
+import { hasPendingCatalogScrollTarget } from "../../utils/catalog-scroll";
 
 export default function AppLayout() {
   const location = useLocation();
@@ -20,7 +21,13 @@ export default function AppLayout() {
     prevPathnameRef.current = location.pathname;
 
     if (pathnameChanged) {
-      window.scrollTo({ top: 0, behavior: "auto" });
+      const returningToCatalogCategory =
+        !isProductDetailsPage &&
+        location.pathname.startsWith("/catalog/category/") &&
+        hasPendingCatalogScrollTarget();
+      if (!returningToCatalogCategory) {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      }
     }
   }, [location.pathname, location.hash, isProductDetailsPage, isWhitePage]);
 
