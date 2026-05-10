@@ -7,6 +7,26 @@ export function sanitizePriceInput(value: string): string {
   return value.replace(/\D+/g, "");
 }
 
+export function getProductsLabel(count: number): string {
+  const lastTwoDigits = count % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return "товаров";
+  }
+
+  const lastDigit = count % 10;
+
+  if (lastDigit === 1) {
+    return "товар";
+  }
+
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return "товара";
+  }
+
+  return "товаров";
+}
+
 export function getFilteredAndSortedProducts(
   products: CatalogProduct[],
   minPriceInput: string,

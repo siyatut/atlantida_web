@@ -17,7 +17,7 @@ import {
   getCatalogProductsByCategory,
 } from "../services/catalog.service";
 import type { CatalogCategory, CatalogProduct } from "../types/catalog";
-import { getFilteredAndSortedProducts, sanitizePriceInput } from "../utils/catalog-product-list";
+import { getFilteredAndSortedProducts, getProductsLabel, sanitizePriceInput } from "../utils/catalog-product-list";
 import {
   resolveCatalogBackLabel,
   resolveCategoryDisplayTitle,
@@ -117,27 +117,6 @@ function getSubcategoryLabel(count: number): string {
 
   return "подкатегорий";
 }
-
-function getProductsLabel(count: number): string {
-  const lastTwoDigits = count % 100;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-    return "товаров";
-  }
-
-  const lastDigit = count % 10;
-
-  if (lastDigit === 1) {
-    return "товар";
-  }
-
-  if (lastDigit >= 2 && lastDigit <= 4) {
-    return "товара";
-  }
-
-  return "товаров";
-}
-
 
 export default function CatalogPage() {
   const location = useLocation();
