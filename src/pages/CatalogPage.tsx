@@ -149,6 +149,7 @@ export default function CatalogPage() {
   const [isGridLoading, setIsGridLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastResolvedCategoryIdRef = useRef<number | null>(null);
+  const scrollToTopOnPageChangeRef = useRef(false);
 
   // Sync state immediately when URL changes within the mounted catalog component.
   // Called during render so React discards the stale frame and re-renders synchronously.
@@ -531,6 +532,12 @@ export default function CatalogPage() {
     };
   }, [isCategoryRoute, isInitialLoading]);
 
+  useEffect(() => {
+    if (!scrollToTopOnPageChangeRef.current) return;
+    scrollToTopOnPageChangeRef.current = false;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
+
   function updateCatalogSearchParams(
     update: (nextSearchParams: URLSearchParams) => void,
     replace = true,
@@ -603,7 +610,7 @@ export default function CatalogPage() {
       false,
     );
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTopOnPageChangeRef.current = true;
   }
 
   return (
