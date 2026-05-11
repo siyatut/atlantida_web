@@ -470,6 +470,12 @@ export default function CatalogPage() {
       return;
     }
 
+    // Products for this category haven't been resolved yet — totalPages is
+    // temporarily 1 (empty list). Don't correct the page based on stale data.
+    if (isCategoryRoute && resolvedCategoryId !== parsedCategoryId) {
+      return;
+    }
+
     if (pageFromSearchParams <= totalPages) {
       return;
     }
@@ -483,7 +489,16 @@ export default function CatalogPage() {
     }
 
     setSearchParams(nextSearchParams, { replace: true });
-  }, [isLoading, pageFromSearchParams, searchParams, setSearchParams, totalPages]);
+  }, [
+    isLoading,
+    isCategoryRoute,
+    resolvedCategoryId,
+    parsedCategoryId,
+    pageFromSearchParams,
+    searchParams,
+    setSearchParams,
+    totalPages,
+  ]);
 
   // On mount only: restore scroll to the product card the user came from.
   // Read without deleting so StrictMode's double-invoke doesn't consume the entry before rAF fires.
