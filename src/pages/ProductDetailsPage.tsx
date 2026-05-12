@@ -7,7 +7,7 @@ import HomeHashLink from "../components/navigation/HomeHashLink";
 import { getCatalogProductImageSrc } from "../utils/catalog-image";
 import { getCatalogCardTitleParts } from "../utils/catalog-title";
 import { formatCatalogProductPrice, getCatalogProductNumericPrice } from "../utils/price";
-import { sanitizeWooHtml } from "../utils/sanitize-html";
+import { markdownToHtml, sanitizeWooHtml } from "../utils/sanitize-html";
 
 type ProductRouteState = {
   backPath?: string;
@@ -118,11 +118,11 @@ function ProductDetailsPage() {
   }, [descriptionContent]);
 
   const descriptionHtml = useMemo(() => {
-    if (!descriptionContent || !descriptionHasHtml) {
-      return null;
-    }
-
-    return sanitizeWooHtml(descriptionContent);
+    if (!descriptionContent) return null;
+    const raw = descriptionHasHtml
+      ? descriptionContent
+      : markdownToHtml(descriptionContent);
+    return sanitizeWooHtml(raw);
   }, [descriptionContent, descriptionHasHtml]);
 
   const titleParts = useMemo(() => {
