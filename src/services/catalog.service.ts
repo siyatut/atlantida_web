@@ -151,10 +151,17 @@ export async function getCatalogProductById(productId: number): Promise<CatalogP
     if (cached) return cached;
   }
 
+  const individually = cachedProductsById.get(idStr);
+  if (individually) return individually;
+
+  let product: CatalogProduct | null = null;
   if (catalogSource === "strapi") {
-    return getStrapiCatalogProductById(productId);
+    product = await getStrapiCatalogProductById(productId);
+  } else {
+    const raw = await fetchWooProductById(productId);
+    product = raw ? mapWooProduct(raw) : null;
   }
 
-  const raw = await fetchWooProductById(productId);
-  return raw ? mapWooProduct(raw) : null;
+  if (product) cachedProductsById.set(idStr, product);
+  return product;
 }
