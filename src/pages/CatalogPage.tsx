@@ -808,7 +808,6 @@ export default function CatalogPage() {
                         <ProductCard
                           key={product.id}
                           product={product}
-                          formatTitleSuffix
                           to={`/catalog/product/${product.id}`}
                           state={{
                             backPath: currentPath,
