@@ -229,9 +229,12 @@ function ProductDetailsPage() {
                         <p className="mt-2 text-xl font-medium leading-snug text-[#4BADE8]">
                           {formatCatalogProductPrice(product)}
                         </p>
-                        <p className="mt-2 text-sm leading-6 text-[#234579]">
+                        <HomeHashLink
+                          hash="#contacts"
+                          className="mt-2 block text-sm leading-6 text-[#234579] decoration-[#234579] hover:underline"
+                        >
                           Наличие уточняйте в магазине
-                        </p>
+                        </HomeHashLink>
                       </>
                     )}
                   </div>
