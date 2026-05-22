@@ -8,33 +8,10 @@ function matchesAquariumCategory(value: string): boolean {
   return AQUARIUM_CATEGORY_PATTERN.test(value.trim());
 }
 
-export function isAquariumCategoryLike(
+function isAquariumCategoryLike(
   category: Pick<CatalogCategory, "name" | "slug"> | Pick<CatalogProductCategory, "name" | "slug">,
 ): boolean {
   return matchesAquariumCategory(category.slug) || matchesAquariumCategory(category.name);
-}
-
-export function isAquariumCategoryBranch(
-  categoryId: string | null | undefined,
-  categories: CatalogCategory[],
-): boolean {
-  if (!categoryId) {
-    return false;
-  }
-
-  const categoryById = new Map(categories.map((category) => [category.id, category]));
-  let currentCategory = categoryById.get(categoryId) ?? null;
-
-  while (currentCategory) {
-    if (isAquariumCategoryLike(currentCategory)) {
-      return true;
-    }
-
-    currentCategory =
-      currentCategory.parent > 0 ? categoryById.get(String(currentCategory.parent)) ?? null : null;
-  }
-
-  return false;
 }
 
 export function getCatalogCardTitleParts(
