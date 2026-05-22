@@ -1,12 +1,3 @@
-import { catalogSource } from "../config/catalog";
-import {
-  fetchWooCategories,
-  fetchWooProductById,
-  fetchWooProducts,
-  fetchWooProductsByCategory,
-} from "../data-access/woocommerce/store-api";
-import { mapWooCategory } from "../mapper/category.mapper";
-import { mapWooProduct } from "../mapper/product.mapper";
 import {
   getCatalogCategories as getStrapiCatalogCategories,
   getCatalogProductById as getStrapiCatalogProductById,
@@ -28,12 +19,7 @@ export function warmCatalogProductCache(products: CatalogProduct[]): void {
 }
 
 export async function getCatalogProducts(categoryId?: number): Promise<CatalogProduct[]> {
-  if (catalogSource === "strapi") {
-    return getStrapiCatalogProducts(categoryId);
-  }
-
-  const raw = await fetchWooProducts(categoryId);
-  return raw.map(mapWooProduct);
+  return getStrapiCatalogProducts(categoryId);
 }
 
 export async function getCatalogCategories(): Promise<CatalogCategory[]> {
@@ -45,16 +31,7 @@ export async function getCatalogCategories(): Promise<CatalogCategory[]> {
     return categoriesPromise;
   }
 
-  const loadCategories = async () => {
-    if (catalogSource === "strapi") {
-      return getStrapiCatalogCategories();
-    }
-
-    const raw = await fetchWooCategories();
-    return raw.map(mapWooCategory);
-  };
-
-  categoriesPromise = loadCategories()
+  categoriesPromise = getStrapiCatalogCategories()
     .then((categories) => {
       cachedCategories = categories;
       return categories;
@@ -75,14 +52,7 @@ export function getCachedCatalogProductsByCategory(categoryId: number): CatalogP
 }
 
 export async function getCatalogCategoriesFresh(): Promise<CatalogCategory[]> {
-  if (catalogSource === "strapi") {
-    const categories = await getStrapiCatalogCategories();
-    cachedCategories = categories;
-    return categories;
-  }
-
-  const raw = await fetchWooCategories();
-  const categories = raw.map(mapWooCategory);
+  const categories = await getStrapiCatalogCategories();
   cachedCategories = categories;
   return categories;
 }
@@ -100,16 +70,7 @@ export async function getCatalogProductsByCategory(categoryId: number): Promise<
     return pendingPromise;
   }
 
-  const loadProducts = async () => {
-    if (catalogSource === "strapi") {
-      return getStrapiCatalogProductsByCategory(categoryId);
-    }
-
-    const raw = await fetchWooProductsByCategory(categoryId);
-    return raw.map(mapWooProduct);
-  };
-
-  const nextPromise = loadProducts()
+  const nextPromise = getStrapiCatalogProductsByCategory(categoryId)
     .then((products) => {
       cachedProductsByCategory.set(categoryId, products);
       return products;
@@ -123,14 +84,7 @@ export async function getCatalogProductsByCategory(categoryId: number): Promise<
 }
 
 export async function getCatalogProductsByCategoryFresh(categoryId: number): Promise<CatalogProduct[]> {
-  if (catalogSource === "strapi") {
-    const products = await getStrapiCatalogProductsByCategory(categoryId);
-    cachedProductsByCategory.set(categoryId, products);
-    return products;
-  }
-
-  const raw = await fetchWooProductsByCategory(categoryId);
-  const products = raw.map(mapWooProduct);
+  const products = await getStrapiCatalogProductsByCategory(categoryId);
   cachedProductsByCategory.set(categoryId, products);
   return products;
 }
@@ -154,13 +108,7 @@ export async function getCatalogProductById(productId: number): Promise<CatalogP
   const individually = cachedProductsById.get(idStr);
   if (individually) return individually;
 
-  let product: CatalogProduct | null = null;
-  if (catalogSource === "strapi") {
-    product = await getStrapiCatalogProductById(productId);
-  } else {
-    const raw = await fetchWooProductById(productId);
-    product = raw ? mapWooProduct(raw) : null;
-  }
+  const product = await getStrapiCatalogProductById(productId);
 
   if (product) cachedProductsById.set(idStr, product);
   return product;
