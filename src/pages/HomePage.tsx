@@ -611,6 +611,12 @@ export default function HomePage() {
                   >
                     +7 (962) 504-60-96
                   </a>
+                  <a
+                    href="tel:+79030595992"
+                    className="mt-1 inline-block text-lg font-medium text-[#2C5C8E] transition-all duration-200 hover:text-[#2F84BF]"
+                  >
+                    +7 (903) 059-59-92
+                  </a>
                 </li>
                 <li>
                   <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
