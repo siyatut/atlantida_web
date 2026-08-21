@@ -8,7 +8,7 @@ import { hasPendingCatalogScrollTarget } from "../../utils/catalog-scroll";
 export default function AppLayout() {
   const location = useLocation();
   const isProductDetailsPage = location.pathname.startsWith("/catalog/product/");
-  const isWhitePage = location.pathname === "/favorites" || location.pathname === "/reviews";
+  const isWhitePage = location.pathname === "/reviews";
 
   const prevPathnameRef = useRef(location.pathname);
 

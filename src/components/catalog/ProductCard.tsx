@@ -4,7 +4,6 @@ import type { CatalogProduct } from "../../types/catalog";
 import { getCatalogProductImageSrc } from "../../utils/catalog-image";
 import { getCatalogCardTitleParts } from "../../utils/catalog-title";
 import { formatCatalogProductPrice, getCatalogProductNumericPrice } from "../../utils/price";
-import FavoriteToggleButton from "./FavoriteToggleButton";
 
 type ProductCardProps = {
   product: CatalogProduct;
@@ -66,8 +65,6 @@ export default function ProductCard({
     >
       <article className="flex h-full flex-col rounded-[22px] border border-[#C6DFEC] bg-[#F8FAFC] p-4 transition-colors hover:bg-white">
         <div className="relative mb-4 flex h-[220px] w-full items-center justify-center rounded-[18px] border border-[#E1E8EF] bg-white p-4">
-          <FavoriteToggleButton product={product} variant="icon" />
-
           <img
             src={imageSrc}
             alt={product.title}

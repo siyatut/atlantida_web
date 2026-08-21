@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import FavoriteToggleButton from "../components/catalog/FavoriteToggleButton";
 import { getCachedCatalogProductById, getCatalogProductById } from "../services/catalog.service";
 import type { CatalogProduct } from "../types/catalog";
 import HomeHashLink from "../components/navigation/HomeHashLink";
@@ -239,7 +238,6 @@ function ProductDetailsPage() {
                     )}
                   </div>
 
-                  <FavoriteToggleButton product={product} />
                 </div>
 
                 {descriptionContent ? (
