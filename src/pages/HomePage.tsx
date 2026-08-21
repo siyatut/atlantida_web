@@ -627,13 +627,18 @@ export default function HomePage() {
                   <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
                     Адрес
                   </p>
-                  <p className="mt-2 text-base leading-7 text-[#6B778B]">
+                  <a
+                    href="https://yandex.ru/maps/?pt=43.868429,56.350553&z=17&l=map"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-base leading-7 text-[#6B778B] transition-colors duration-200 hover:text-[#2F84BF] hover:underline underline-offset-4"
+                  >
                     Нижний Новгород, ул. Коминтерна, 117
                     <br />
                     Универмаг "Сормовские Зори"
                     <br />
                     1 этаж, левое крыло
-                  </p>
+                  </a>
                 </li>
                 <li>
                   <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#4A9ED5]">
