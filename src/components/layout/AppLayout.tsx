@@ -26,7 +26,7 @@ export default function AppLayout() {
         location.pathname.startsWith("/catalog/category/") &&
         hasPendingCatalogScrollTarget();
       if (!returningToCatalogCategory) {
-        window.scrollTo({ top: 0, behavior: "auto" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     }
   }, [location.pathname, location.hash, isProductDetailsPage, isWhitePage]);
