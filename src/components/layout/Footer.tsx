@@ -13,6 +13,7 @@ const COMPANY_LINKS: FooterNavItem[] = [
   { label: "О нас", to: "/#about" },
   { label: "Отзывы", to: "/reviews" },
   { label: "Контакты", to: "/#contacts" },
+  { label: "Политика конфиденциальности", to: "/privacy" },
 ];
 
 function FooterLink({ item }: { item: FooterNavItem }) {

@@ -229,7 +229,11 @@ export default function HomePage() {
   const [showLoadingText, setShowLoadingText] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
+  const [consent, setConsent] = useState(false);
+  const [consentTouched, setConsentTouched] = useState(false);
+
   const formErrors = getContactFormErrors(formValues);
+  const consentError = consentTouched && !consent ? "Необходимо дать согласие" : "";
 
   useEffect(() => {
     if (!submitSuccess) {
@@ -306,8 +310,9 @@ export default function HomePage() {
     const hasErrors = Object.values(nextErrors).some(Boolean);
 
     setTouchedFields(nextTouchedFields);
+    setConsentTouched(true);
 
-    if (hasErrors) {
+    if (hasErrors || !consent) {
       setSubmitSuccess(false);
       return;
     }
@@ -327,6 +332,8 @@ export default function HomePage() {
 
       setFormValues(INITIAL_CONTACT_FORM);
       setTouchedFields(INITIAL_TOUCHED);
+      setConsent(false);
+      setConsentTouched(false);
       setHasSubmitted(false);
       setSubmitSuccess(true);
     } catch (error) {
@@ -574,7 +581,27 @@ export default function HomePage() {
                     </span>
                   ) : null}
                 </label>
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 flex flex-col gap-3">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => {
+                        setConsent(e.target.checked);
+                        setConsentTouched(true);
+                      }}
+                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#CBE3F1] accent-[#2F84BF]"
+                    />
+                    <span className="text-sm leading-6 text-[#6B778B]">
+                      Я согласен(на) на{" "}
+                      <Link to="/privacy" className="text-[#2F84BF] underline underline-offset-2 hover:text-[#256EAC]">
+                        обработку персональных данных
+                      </Link>
+                    </span>
+                  </label>
+                  {consentError ? (
+                    <span className="text-sm leading-5 text-[#C96565]">{consentError}</span>
+                  ) : null}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <button
                     type="submit"

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { getPublishedReviews, submitReview, type PublishedReview } from "../services/reviews.service";
 
 type ReviewFormValues = {
@@ -90,6 +91,8 @@ export default function ReviewsPage() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLoadingText, setShowLoadingText] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [consentTouched, setConsentTouched] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState(false);
 
@@ -171,8 +174,9 @@ export default function ReviewsPage() {
     const hasErrors = Object.values(nextErrors).some(Boolean);
 
     setTouchedFields(nextTouchedFields);
+    setConsentTouched(true);
 
-    if (hasErrors) {
+    if (hasErrors || !consent) {
       setSubmitSuccess(false);
       return;
     }
@@ -191,6 +195,8 @@ export default function ReviewsPage() {
 
       setFormValues(INITIAL_FORM_VALUES);
       setTouchedFields({ name: false, rating: false, message: false });
+      setConsent(false);
+      setConsentTouched(false);
       setHasSubmitted(false);
       setSubmitSuccess(true);
     } catch (error) {
@@ -324,7 +330,28 @@ export default function ReviewsPage() {
               ) : null}
             </label>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
+            <div className="flex flex-col gap-3 pt-2">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={consent}
+                  onChange={(e) => {
+                    setConsent(e.target.checked);
+                    setConsentTouched(true);
+                  }}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-[#CBE3F1] accent-[#2F84BF]"
+                />
+                <span className="text-sm leading-6 text-[#6B778B]">
+                  Я согласен(на) на{" "}
+                  <Link to="/privacy" className="text-[#2F84BF] underline underline-offset-2 hover:text-[#256EAC]">
+                    обработку персональных данных
+                  </Link>
+                </span>
+              </label>
+              {consentTouched && !consent ? (
+                <span className="text-sm leading-5 text-[#C96565]">Необходимо дать согласие</span>
+              ) : null}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <button
                 type="submit"
                 disabled={isSubmitting}
@@ -342,6 +369,7 @@ export default function ReviewsPage() {
                   Не удалось отправить. Попробуйте ещё раз.
                 </span>
               ) : null}
+              </div>
             </div>
           </form>
         </section>
