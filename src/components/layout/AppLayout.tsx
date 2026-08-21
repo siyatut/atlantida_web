@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Footer from "./Footer";
 import Header from "./Header";
-import { isHomeHashLink, scrollToHashTarget } from "../../utils/hash-scroll";
+import { animatedScrollTo, isHomeHashLink, scrollToHashTarget } from "../../utils/hash-scroll";
 import { hasPendingCatalogScrollTarget } from "../../utils/catalog-scroll";
 
 export default function AppLayout() {
@@ -26,7 +26,7 @@ export default function AppLayout() {
         location.pathname.startsWith("/catalog/category/") &&
         hasPendingCatalogScrollTarget();
       if (!returningToCatalogCategory) {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        animatedScrollTo(0);
       }
     }
   }, [location.pathname, location.hash, isProductDetailsPage, isWhitePage]);

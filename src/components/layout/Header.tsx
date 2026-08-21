@@ -1,15 +1,20 @@
 import type { MouseEvent } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import webLogo from "../../assets/web_logo.png";
+import { animatedScrollTo } from "../../utils/hash-scroll";
 import HomeHashLink from "../navigation/HomeHashLink";
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   function handleHomeClick(event: MouseEvent<HTMLAnchorElement>) {
     if (location.pathname === "/") {
       event.preventDefault();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (location.hash) {
+        navigate("/", { replace: true });
+      }
+      animatedScrollTo(0);
     }
   }
 
