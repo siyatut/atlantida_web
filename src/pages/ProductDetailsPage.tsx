@@ -4,7 +4,6 @@ import { getCachedCatalogProductById, getCatalogProductById } from "../services/
 import type { CatalogProduct } from "../types/catalog";
 import HomeHashLink from "../components/navigation/HomeHashLink";
 import { getCatalogProductImageSrc } from "../utils/catalog-image";
-import { getCatalogCardTitleParts } from "../utils/catalog-title";
 import { formatCatalogProductPrice, getCatalogProductNumericPrice } from "../utils/price";
 import { markdownToHtml, sanitizeWooHtml } from "../utils/sanitize-html";
 
@@ -124,13 +123,6 @@ function ProductDetailsPage() {
     return sanitizeWooHtml(raw);
   }, [descriptionContent, descriptionHasHtml]);
 
-  const titleParts = useMemo(() => {
-    if (!product) {
-      return null;
-    }
-
-    return getCatalogCardTitleParts(product);
-  }, [product]);
 
   const imageSrc = useMemo(() => {
     return product ? getCatalogProductImageSrc(product) : null;
